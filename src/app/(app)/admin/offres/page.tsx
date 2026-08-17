@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import type { Offre } from "@/types/database";
 import { createOffreEntry, deleteOffreEntry } from "./actions";
+import Link from "next/link";
 
 export default async function OffresAdminPage() {
   await requireAdmin();
@@ -39,7 +40,12 @@ export default async function OffresAdminPage() {
                 <td className="max-w-xs truncate px-4 py-3 text-zinc-600">{o.description ?? "—"}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{o.prix != null ? `${o.prix} €` : "—"}</td>
                 <td className="whitespace-nowrap px-4 py-3">
-                  <DeleteButton id={o.id} />
+                  <div className="flex justify-end gap-3">
+                    <Link href={`/admin/offres/${o.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                      Modifier
+                    </Link>
+                    <DeleteButton id={o.id} />
+                  </div>
                 </td>
               </tr>
             ))}

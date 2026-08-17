@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { UserRole } from "@/types/database";
 
 export async function createUserEntry(formData: FormData) {
@@ -40,6 +41,31 @@ export async function createUserEntry(formData: FormData) {
   if (profileError) throw new Error(profileError.message);
 
   revalidatePath("/admin/utilisateurs");
+}
+
+export async function updateUserEntry(userId: string, formData: FormData) {
+  await requireAdmin();
+
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const role = String(formData.get("role") ?? "client") as UserRole;
+  const clientId = String(formData.get("client_id") ?? "").trim();
+  const prestataireId = String(formData.get("prestataire_id") ?? "").trim();
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      role,
+      full_name: fullName || null,
+      client_id: role === "client" && clientId ? clientId : null,
+      prestataire_id: role === "prestataire" && prestataireId ? prestataireId : null,
+    })
+    .eq("id", userId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/admin/utilisateurs");
+  redirect("/admin/utilisateurs");
 }
 
 export async function deleteUserEntry(userId: string) {

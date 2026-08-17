@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -21,6 +22,23 @@ export async function createOffreEntry(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/offres");
+}
+
+export async function updateOffreEntry(offreId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const prixRaw = str(formData, "prix");
+  const { error } = await supabase
+    .from("offres")
+    .update({
+      nom: str(formData, "nom"),
+      description: str(formData, "description"),
+      prix: prixRaw ? Number(prixRaw) : null,
+    })
+    .eq("id", offreId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/offres");
+  redirect("/admin/offres");
 }
 
 export async function deleteOffreEntry(offreId: string) {

@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import type { TachePrestataire, Prestataire, Projet } from "@/types/database";
-import { createTache, deleteTache } from "./actions";
+import type { TachePrestataire, Prestataire, Projet, TarifMonteur } from "@/types/database";
+import { createTache, deleteTache, updateTarifsMonteur } from "./actions";
+import { TacheForm } from "./TacheForm";
 import Link from "next/link";
 
 function currentMonth(): string {
@@ -33,7 +34,7 @@ export default async function PaiementsAdminPage({
   const monthStart = `${month}-01`;
   const monthEnd = `${shiftMonth(month, 1)}-01`;
 
-  const [{ data: taches }, { data: prestataires }, { data: projets }] = await Promise.all([
+  const [{ data: taches }, { data: prestataires }, { data: projets }, { data: tarifs }] = await Promise.all([
     supabase
       .from("taches_prestataires")
       .select("*, prestataires(*), projets(*)")
@@ -42,11 +43,15 @@ export default async function PaiementsAdminPage({
       .order("date_tache", { ascending: false }),
     supabase.from("prestataires").select("*").order("nom"),
     supabase.from("projets").select("*").order("nom"),
+    supabase.from("tarifs_monteur").select("*"),
   ]);
 
   const list = (taches ?? []) as TachePrestataire[];
   const prestataireList = (prestataires ?? []) as Prestataire[];
   const projetList = (projets ?? []) as Projet[];
+  const tarifList = (tarifs ?? []) as TarifMonteur[];
+  const tarifPremium = tarifList.find((t) => t.cle === "video_premium");
+  const tarifClassique = tarifList.find((t) => t.cle === "video_classique");
 
   const byPrestataire = new Map<string, { prestataire: Prestataire | undefined; taches: TachePrestataire[]; total: number }>();
   for (const t of list) {
@@ -84,31 +89,44 @@ export default async function PaiementsAdminPage({
         </div>
       </div>
 
-      <form action={createTache} className="grid grid-cols-6 gap-3 rounded-lg border border-zinc-200 bg-white p-4">
-        <input type="hidden" name="mois" value={month} />
-        <select name="prestataire_id" required className="input">
-          <option value="">Prestataire...</option>
-          {prestataireList.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nom}
-            </option>
-          ))}
-        </select>
-        <select name="projet_id" className="input">
-          <option value="">Projet (optionnel)</option>
-          {projetList.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.nom}
-            </option>
-          ))}
-        </select>
-        <input name="description" placeholder="Description de la tâche" required className="input" />
-        <input name="montant" type="number" step="0.01" placeholder="Montant (€)" required className="input" />
-        <input name="date_tache" type="date" defaultValue={`${month}-01`} className="input" />
-        <button type="submit" className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">
-          Ajouter
-        </button>
-      </form>
+      <details className="rounded-lg border border-zinc-200 bg-white p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-zinc-900">
+          Tarifs monteur (prix par vidéo)
+        </summary>
+        <form action={updateTarifsMonteur} className="mt-3 flex items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">Vidéo montée premium (€)</span>
+            <input
+              name="prix_video_premium"
+              type="number"
+              step="0.01"
+              defaultValue={tarifPremium?.prix ?? 0}
+              className="input"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-zinc-700">Vidéo montée classique (€)</span>
+            <input
+              name="prix_video_classique"
+              type="number"
+              step="0.01"
+              defaultValue={tarifClassique?.prix ?? 0}
+              className="input"
+            />
+          </label>
+          <button type="submit" className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800">
+            Enregistrer les tarifs
+          </button>
+        </form>
+      </details>
+
+      <TacheForm
+        mois={month}
+        prestataires={prestataireList}
+        projets={projetList}
+        tarifsMonteur={tarifList}
+        action={createTache}
+      />
 
       <div className="rounded-lg border border-zinc-200 bg-white p-5">
         <p className="text-sm text-zinc-500">Total dû ce mois-ci</p>
@@ -135,6 +153,9 @@ export default async function PaiementsAdminPage({
                     <tr key={t.id} className="hover:bg-zinc-50">
                       <td className="whitespace-nowrap px-4 py-2.5 text-zinc-500">
                         {new Date(t.date_tache).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-zinc-500 capitalize">
+                        {t.type_remuneration?.replace("_", " ") ?? "—"}
                       </td>
                       <td className="px-4 py-2.5 text-zinc-800">{t.description}</td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-zinc-500">{t.projets?.nom ?? "—"}</td>

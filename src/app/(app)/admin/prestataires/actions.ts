@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -13,16 +14,31 @@ function str(formData: FormData, key: string): string | null {
 export async function createPrestataireEntry(formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
-  const tauxRaw = str(formData, "taux_horaire");
   const { error } = await supabase.from("prestataires").insert({
     nom: str(formData, "nom"),
     email: str(formData, "email"),
     telephone: str(formData, "telephone"),
-    taux_horaire: tauxRaw ? Number(tauxRaw) : null,
     notes: str(formData, "notes"),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/prestataires");
+}
+
+export async function updatePrestataireEntry(prestataireId: string, formData: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("prestataires")
+    .update({
+      nom: str(formData, "nom"),
+      email: str(formData, "email"),
+      telephone: str(formData, "telephone"),
+      notes: str(formData, "notes"),
+    })
+    .eq("id", prestataireId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/prestataires");
+  redirect("/admin/prestataires");
 }
 
 export async function deletePrestataireEntry(prestataireId: string) {

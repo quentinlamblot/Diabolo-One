@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import type { Client } from "@/types/database";
 import { createClientEntry, deleteClientEntry } from "./actions";
+import Link from "next/link";
 
 export default async function ClientsAdminPage() {
   await requireAdmin();
@@ -42,7 +43,12 @@ export default async function ClientsAdminPage() {
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{c.telephone ?? "—"}</td>
                 <td className="max-w-xs truncate px-4 py-3 text-zinc-600">{c.notes ?? "—"}</td>
                 <td className="whitespace-nowrap px-4 py-3">
-                  <DeleteButton id={c.id} />
+                  <div className="flex justify-end gap-3">
+                    <Link href={`/admin/clients/${c.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                      Modifier
+                    </Link>
+                    <DeleteButton id={c.id} />
+                  </div>
                 </td>
               </tr>
             ))}

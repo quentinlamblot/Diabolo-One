@@ -5,7 +5,8 @@ import Link from "next/link";
 import type { Interviewe, Statut } from "@/types/database";
 import { AddIntervieweForm } from "./AddIntervieweForm";
 import { StatutSelect } from "./StatutSelect";
-import { createInterviewe, updateIntervieweStatut, deleteInterviewe } from "./actions";
+import { ImportContactsForm } from "./ImportContactsForm";
+import { createInterviewe, updateIntervieweStatut, deleteInterviewe, importInterviewes } from "./actions";
 
 export default async function ContactsPage({ params }: PageProps<"/projets/[id]/contacts">) {
   const { id } = await params;
@@ -32,6 +33,11 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
     await createInterviewe(id, formData);
   };
 
+  const boundImport = async (formData: FormData) => {
+    "use server";
+    return importInterviewes(id, formData);
+  };
+
   const canAdd = profile.role === "admin" || profile.role === "client";
   const canEditStatut = profile.role === "admin" || profile.role === "prestataire";
 
@@ -47,7 +53,12 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
         </p>
       </div>
 
-      {canAdd && <AddIntervieweForm statuts={statutList} action={boundCreate} />}
+      {canAdd && (
+        <div className="flex flex-col gap-4">
+          <AddIntervieweForm statuts={statutList} action={boundCreate} />
+          <ImportContactsForm action={boundImport} />
+        </div>
+      )}
 
       {list.length === 0 ? (
         <p className="text-sm text-zinc-500">Aucun contact pour le moment.</p>

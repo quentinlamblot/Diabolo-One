@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { Profile, Client, Prestataire } from "@/types/database";
 import { UserForm } from "./UserForm";
 import { createUserEntry, deleteUserEntry } from "./actions";
+import Link from "next/link";
 
 export default async function UtilisateursAdminPage() {
   const me = await requireAdmin();
@@ -43,7 +44,12 @@ export default async function UtilisateursAdminPage() {
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{p.email}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{roleLabel[p.role]}</td>
                 <td className="whitespace-nowrap px-4 py-3">
-                  {p.id !== me.id && <DeleteButton id={p.id} />}
+                  <div className="flex justify-end gap-3">
+                    <Link href={`/admin/utilisateurs/${p.id}`} className="text-xs font-medium text-blue-600 hover:underline">
+                      Modifier
+                    </Link>
+                    {p.id !== me.id && <DeleteButton id={p.id} />}
+                  </div>
                 </td>
               </tr>
             ))}

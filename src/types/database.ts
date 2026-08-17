@@ -2,6 +2,8 @@ export type UserRole = "admin" | "prestataire" | "client";
 export type FormatType = "16:9" | "9:16" | "16:9 et 9:16";
 export type CharteStatus = "ok" | "en_attente";
 export type StatutType = "projet" | "interviewe";
+export type TypeRemuneration = "monteur" | "graphiste" | "chef_de_projet";
+export type SousTypeMonteur = "video_premium" | "video_classique" | "sur_mesure";
 
 export interface Statut {
   id: string;
@@ -27,9 +29,16 @@ export interface Prestataire {
   nom: string;
   email: string | null;
   telephone: string | null;
-  taux_horaire: number | null;
   notes: string | null;
   created_at: string;
+  updated_at: string;
+}
+
+export interface TarifMonteur {
+  id: string;
+  cle: string;
+  libelle: string;
+  prix: number;
   updated_at: string;
 }
 
@@ -99,6 +108,11 @@ export interface TachePrestataire {
   description: string;
   montant: number;
   date_tache: string;
+  type_remuneration: TypeRemuneration | null;
+  sous_type: string | null;
+  quantite: number | null;
+  pourcentage_remuneration: number | null;
+  pourcentage_effectue: number | null;
   created_at: string;
   prestataires?: Prestataire;
   projets?: Projet;

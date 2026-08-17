@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import { Badge } from "@/components/Badge";
 import type { Statut } from "@/types/database";
-import { createStatutEntry, deleteStatutEntry } from "./actions";
+import { createStatutEntry, updateStatutEntry, deleteStatutEntry } from "./actions";
+import { StatutItem } from "./StatutItem";
 
 export default async function StatutsAdminPage() {
   await requireAdmin();
@@ -41,27 +41,18 @@ function StatutGroup({ title, list }: { title: string; list: Statut[] }) {
       <h2 className="mb-3 text-sm font-semibold text-zinc-900">{title}</h2>
       <div className="flex flex-wrap gap-2">
         {list.length === 0 && <p className="text-sm text-zinc-500">Aucun statut.</p>}
-        {list.map((s) => (
-          <span key={s.id} className="inline-flex items-center gap-2">
-            <Badge label={s.label} color={s.couleur} />
-            <DeleteButton id={s.id} />
-          </span>
-        ))}
+        {list.map((s) => {
+          const boundUpdate = async (formData: FormData) => {
+            "use server";
+            await updateStatutEntry(s.id, formData);
+          };
+          const boundDelete = async () => {
+            "use server";
+            await deleteStatutEntry(s.id);
+          };
+          return <StatutItem key={s.id} statut={s} updateAction={boundUpdate} deleteAction={boundDelete} />;
+        })}
       </div>
     </div>
-  );
-}
-
-function DeleteButton({ id }: { id: string }) {
-  const action = async () => {
-    "use server";
-    await deleteStatutEntry(id);
-  };
-  return (
-    <form action={action}>
-      <button type="submit" className="text-zinc-400 hover:text-red-600" aria-label="Supprimer">
-        ×
-      </button>
-    </form>
   );
 }
