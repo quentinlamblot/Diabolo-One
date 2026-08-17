@@ -2,11 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Interviewe, Statut } from "@/types/database";
+import type { Interviewe, IntervieweChamp, Statut } from "@/types/database";
 import { AddIntervieweForm } from "./AddIntervieweForm";
-import { StatutSelect } from "./StatutSelect";
+import { AddColumnForm } from "./AddColumnForm";
 import { ImportContactsForm } from "./ImportContactsForm";
-import { createInterviewe, updateIntervieweStatut, deleteInterviewe, importInterviewes } from "./actions";
+import { IntervieweRow } from "./IntervieweRow";
+import {
+  createInterviewe,
+  updateInterviewe,
+  updateIntervieweStatut,
+  deleteInterviewe,
+  importInterviewes,
+  createIntervieweChamp,
+  deleteIntervieweChamp,
+} from "./actions";
 
 export default async function ContactsPage({ params }: PageProps<"/projets/[id]/contacts">) {
   const { id } = await params;
@@ -16,17 +25,20 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
   const { data: projet } = await supabase.from("projets").select("id, nom").eq("id", id).single();
   if (!projet) notFound();
 
-  const [{ data: interviewes }, { data: statuts }] = await Promise.all([
+  const [{ data: interviewes }, { data: statuts }, { data: champs }] = await Promise.all([
     supabase
       .from("interviewes")
       .select("*, statuts(*)")
       .eq("projet_id", id)
       .order("created_at", { ascending: false }),
     supabase.from("statuts").select("*").eq("type", "interviewe").order("ordre"),
+    supabase.from("interviewe_champs").select("*").order("ordre"),
   ]);
 
   const list = (interviewes ?? []) as Interviewe[];
   const statutList = (statuts ?? []) as Statut[];
+  const champList = (champs ?? []) as IntervieweChamp[];
+  const champIds = champList.map((c) => c.id);
 
   const boundCreate = async (formData: FormData) => {
     "use server";
@@ -38,8 +50,15 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
     return importInterviewes(id, formData);
   };
 
+  const boundAddColumn = async (formData: FormData) => {
+    "use server";
+    await createIntervieweChamp(formData);
+  };
+
   const canAdd = profile.role === "admin" || profile.role === "client";
+  const canEditInfo = profile.role === "admin" || profile.role === "client";
   const canEditStatut = profile.role === "admin" || profile.role === "prestataire";
+  const canDelete = profile.role === "admin";
 
   return (
     <div className="flex flex-col gap-6">
@@ -60,6 +79,30 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
         </div>
       )}
 
+      {profile.role === "admin" && (
+        <div className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white p-4">
+          <AddColumnForm action={boundAddColumn} />
+          {champList.length > 0 && (
+            <div className="flex flex-wrap gap-3">
+              {champList.map((c) => {
+                const boundDeleteColumn = async () => {
+                  "use server";
+                  await deleteIntervieweChamp(c.id);
+                };
+                return (
+                  <form key={c.id} action={boundDeleteColumn} className="flex items-center gap-1 text-xs text-zinc-500">
+                    {c.label}
+                    <button type="submit" className="text-zinc-400 hover:text-red-600" aria-label={`Supprimer la colonne ${c.label}`}>
+                      ×
+                    </button>
+                  </form>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {list.length === 0 ? (
         <p className="text-sm text-zinc-500">Aucun contact pour le moment.</p>
       ) : (
@@ -71,45 +114,44 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
                 <Th>Nom</Th>
                 <Th>Email</Th>
                 <Th>Téléphone</Th>
+                <Th>Date du RDV</Th>
                 <Th>Statut</Th>
                 <Th>Notes</Th>
-                {profile.role === "admin" && <Th />}
+                {champList.map((c) => (
+                  <Th key={c.id}>{c.label}</Th>
+                ))}
+                {(canEditInfo || canDelete) && <Th />}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
-              {list.map((i) => (
-                <tr key={i.id} className="hover:bg-zinc-50">
-                  <td className="whitespace-nowrap px-4 py-3 text-zinc-800">{i.prenom ?? "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-900">{i.nom}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{i.email ?? "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{i.telephone ?? "—"}</td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    {canEditStatut ? (
-                      <StatutSelectClient
-                        projetId={id}
-                        intervieweId={i.id}
-                        statuts={statutList}
-                        value={i.statut_id}
-                      />
-                    ) : i.statuts ? (
-                      <span
-                        className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        style={{ backgroundColor: `${i.statuts.couleur}22`, color: i.statuts.couleur }}
-                      >
-                        {i.statuts.label}
-                      </span>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="max-w-xs truncate px-4 py-3 text-zinc-600">{i.notes ?? "—"}</td>
-                  {profile.role === "admin" && (
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <DeleteIntervieweButton projetId={id} intervieweId={i.id} />
-                    </td>
-                  )}
-                </tr>
-              ))}
+              {list.map((i) => {
+                const boundUpdate = async (formData: FormData) => {
+                  "use server";
+                  await updateInterviewe(id, i.id, champIds, formData);
+                };
+                const boundStatut = async (statutId: string) => {
+                  "use server";
+                  await updateIntervieweStatut(id, i.id, statutId);
+                };
+                const boundDelete = async () => {
+                  "use server";
+                  await deleteInterviewe(id, i.id);
+                };
+                return (
+                  <IntervieweRow
+                    key={i.id}
+                    interviewe={i}
+                    champs={champList}
+                    statuts={statutList}
+                    canEditInfo={canEditInfo}
+                    canEditStatut={canEditStatut}
+                    canDelete={canDelete}
+                    updateAction={boundUpdate}
+                    statutAction={boundStatut}
+                    deleteAction={boundDelete}
+                  />
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -123,37 +165,5 @@ function Th({ children }: { children?: React.ReactNode }) {
     <th className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
       {children}
     </th>
-  );
-}
-
-function StatutSelectClient({
-  projetId,
-  intervieweId,
-  statuts,
-  value,
-}: {
-  projetId: string;
-  intervieweId: string;
-  statuts: Statut[];
-  value: string | null;
-}) {
-  const onChange = async (statutId: string) => {
-    "use server";
-    await updateIntervieweStatut(projetId, intervieweId, statutId);
-  };
-  return <StatutSelect statuts={statuts} value={value} onChange={onChange} />;
-}
-
-function DeleteIntervieweButton({ projetId, intervieweId }: { projetId: string; intervieweId: string }) {
-  const action = async () => {
-    "use server";
-    await deleteInterviewe(projetId, intervieweId);
-  };
-  return (
-    <form action={action}>
-      <button type="submit" className="text-xs font-medium text-red-500 hover:underline">
-        Supprimer
-      </button>
-    </form>
   );
 }

@@ -5,11 +5,14 @@ export type StatutType = "projet" | "interviewe";
 export type TypeRemuneration = "monteur" | "graphiste" | "chef_de_projet";
 export type SousTypeMonteur = "video_premium" | "video_classique" | "sur_mesure";
 
+export type Categorie = "vert" | "orange" | "rouge";
+
 export interface Statut {
   id: string;
   type: StatutType;
   label: string;
   couleur: string;
+  categorie: Categorie | null;
   ordre: number;
   created_at: string;
 }
@@ -94,10 +97,19 @@ export interface Interviewe {
   email: string | null;
   telephone: string | null;
   statut_id: string | null;
+  date_rdv: string | null;
   notes: string | null;
+  custom_fields: Record<string, string>;
   created_at: string;
   updated_at: string;
   statuts?: Statut;
+}
+
+export interface IntervieweChamp {
+  id: string;
+  label: string;
+  ordre: number;
+  created_at: string;
 }
 
 export interface TachePrestataire {

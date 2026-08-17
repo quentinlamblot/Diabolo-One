@@ -16,18 +16,27 @@ export default async function StatutsAdminPage() {
     <div className="flex flex-col gap-8">
       <h1 className="text-2xl font-semibold text-zinc-900">Statuts</h1>
 
-      <form action={createStatutEntry} className="grid grid-cols-5 gap-3 rounded-lg border border-zinc-200 bg-white p-4">
+      <form action={createStatutEntry} className="grid grid-cols-6 gap-3 rounded-lg border border-zinc-200 bg-white p-4">
         <select name="type" required className="input">
           <option value="projet">Statut projet</option>
           <option value="interviewe">Statut interviewé</option>
         </select>
         <input name="label" placeholder="Libellé" required className="input" />
         <input name="couleur" type="color" defaultValue="#3b82f6" className="input h-10 p-1" />
+        <select name="categorie" defaultValue="" className="input">
+          <option value="">Pas de catégorie</option>
+          <option value="vert">🟢 Vert</option>
+          <option value="orange">🟠 Orange</option>
+          <option value="rouge">🔴 Rouge</option>
+        </select>
         <input name="ordre" type="number" placeholder="Ordre" defaultValue={0} className="input" />
         <button type="submit" className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">
           Ajouter
         </button>
       </form>
+      <p className="-mt-4 text-xs text-zinc-500">
+        La catégorie (vert/orange/rouge) est utilisée pour colorer les lignes du tableau de suivi des contacts.
+      </p>
 
       <StatutGroup title="Statuts projet" list={projetStatuts} />
       <StatutGroup title="Statuts interviewé" list={intervieweStatuts} />

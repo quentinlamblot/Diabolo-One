@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 
@@ -9,6 +9,10 @@ function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
   const s = typeof v === "string" ? v.trim() : "";
   return s.length ? s : null;
+}
+
+function canEditInfo(role: string) {
+  return role === "admin" || role === "client";
 }
 
 export async function createInterviewe(projetId: string, formData: FormData) {
@@ -22,8 +26,42 @@ export async function createInterviewe(projetId: string, formData: FormData) {
     email: str(formData, "email"),
     telephone: str(formData, "telephone"),
     statut_id: str(formData, "statut_id"),
+    date_rdv: str(formData, "date_rdv"),
     notes: str(formData, "notes"),
   });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/projets/${projetId}/contacts`);
+}
+
+export async function updateInterviewe(
+  projetId: string,
+  intervieweId: string,
+  champIds: string[],
+  formData: FormData
+) {
+  const profile = await requireProfile();
+  if (!canEditInfo(profile.role)) throw new Error("Non autorisé");
+
+  const customFields: Record<string, string> = {};
+  for (const champId of champIds) {
+    const v = str(formData, `champ_${champId}`);
+    if (v !== null) customFields[champId] = v;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("interviewes")
+    .update({
+      nom: str(formData, "nom"),
+      prenom: str(formData, "prenom"),
+      email: str(formData, "email"),
+      telephone: str(formData, "telephone"),
+      date_rdv: str(formData, "date_rdv"),
+      notes: str(formData, "notes"),
+      custom_fields: customFields,
+    })
+    .eq("id", intervieweId);
 
   if (error) throw new Error(error.message);
   revalidatePath(`/projets/${projetId}/contacts`);
@@ -40,6 +78,32 @@ export async function updateIntervieweStatut(projetId: string, intervieweId: str
 
   if (error) throw new Error(error.message);
   revalidatePath(`/projets/${projetId}/contacts`);
+}
+
+export async function createIntervieweChamp(formData: FormData) {
+  await requireAdmin();
+  const label = str(formData, "label");
+  if (!label) throw new Error("Libellé requis.");
+
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("interviewe_champs")
+    .select("ordre")
+    .order("ordre", { ascending: false })
+    .limit(1);
+  const nextOrdre = (existing?.[0]?.ordre ?? -1) + 1;
+
+  const { error } = await supabase.from("interviewe_champs").insert({ label, ordre: nextOrdre });
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
+}
+
+export async function deleteIntervieweChamp(champId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("interviewe_champs").delete().eq("id", champId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/", "layout");
 }
 
 function normalizeHeader(h: string): string {
@@ -91,6 +155,7 @@ export async function importInterviewes(
     }
 
     const statutLabel = String(normalized["statut"] ?? "").trim().toLowerCase();
+    const dateRdvRaw = String(normalized["date du rdv"] ?? normalized["date rdv"] ?? normalized["daterdv"] ?? "").trim();
 
     toInsert.push({
       projet_id: projetId,
@@ -99,6 +164,7 @@ export async function importInterviewes(
       email: String(normalized["email"] ?? "").trim() || null,
       telephone: String(normalized["telephone"] ?? normalized["tel"] ?? "").trim() || null,
       statut_id: statutLabel ? (statutByLabel.get(statutLabel) ?? null) : null,
+      date_rdv: dateRdvRaw || null,
     });
   }
 

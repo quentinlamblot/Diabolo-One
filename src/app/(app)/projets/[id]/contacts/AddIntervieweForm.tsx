@@ -19,12 +19,13 @@ export function AddIntervieweForm({
         action(fd);
         ref.current?.reset();
       }}
-      className="grid grid-cols-6 gap-3 rounded-lg border border-zinc-200 bg-white p-4"
+      className="grid grid-cols-7 gap-3 rounded-lg border border-zinc-200 bg-white p-4"
     >
       <input name="prenom" placeholder="Prénom" className="input" />
       <input name="nom" placeholder="Nom" required className="input" />
       <input name="email" type="email" placeholder="Email" className="input" />
       <input name="telephone" placeholder="Téléphone" className="input" />
+      <input name="date_rdv" type="date" title="Date du RDV" className="input" />
       <select name="statut_id" defaultValue="" className="input">
         <option value="">Statut...</option>
         {statuts.map((s) => (

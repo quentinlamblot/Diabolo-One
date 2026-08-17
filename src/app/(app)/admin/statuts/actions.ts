@@ -3,7 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import type { StatutType } from "@/types/database";
+import type { StatutType, Categorie } from "@/types/database";
+
+function categorieOrNull(formData: FormData): Categorie | null {
+  const v = String(formData.get("categorie") ?? "");
+  return v === "vert" || v === "orange" || v === "rouge" ? v : null;
+}
 
 export async function createStatutEntry(formData: FormData) {
   await requireAdmin();
@@ -12,6 +17,7 @@ export async function createStatutEntry(formData: FormData) {
     type: formData.get("type") as StatutType,
     label: String(formData.get("label") ?? "").trim(),
     couleur: String(formData.get("couleur") ?? "#94a3b8"),
+    categorie: categorieOrNull(formData),
     ordre: Number(formData.get("ordre") ?? 0),
   });
   if (error) throw new Error(error.message);
@@ -26,6 +32,7 @@ export async function updateStatutEntry(statutId: string, formData: FormData) {
     .update({
       label: String(formData.get("label") ?? "").trim(),
       couleur: String(formData.get("couleur") ?? "#94a3b8"),
+      categorie: categorieOrNull(formData),
       ordre: Number(formData.get("ordre") ?? 0),
     })
     .eq("id", statutId);
