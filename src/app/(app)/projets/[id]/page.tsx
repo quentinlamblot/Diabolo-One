@@ -49,6 +49,9 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
               ← Projets
             </Link>
             <h1 className="mt-1 text-2xl font-semibold text-zinc-900">{projet.nom}</h1>
+            <p className="text-sm text-zinc-500">
+              {countLivrees(videoCounts ?? [])} vidéo(s) livrée(s) sur {projet.nombre_commande} commandée(s)
+            </p>
           </div>
           <div className="flex gap-2">
             <Link
@@ -154,13 +157,9 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
   );
 }
 
-function ProjetReadonly({
-  projet,
-  videoCounts,
-}: {
-  projet: Projet;
-  videoCounts: { statuts: { label: string; couleur: string }[] | { label: string; couleur: string } | null }[];
-}) {
+type VideoCountRow = { statuts: { label: string; couleur: string }[] | { label: string; couleur: string } | null };
+
+function groupVideoCounts(videoCounts: VideoCountRow[]) {
   const counts = new Map<string, { count: number; couleur: string }>();
   for (const v of videoCounts) {
     const statut = Array.isArray(v.statuts) ? v.statuts[0] : v.statuts;
@@ -169,6 +168,15 @@ function ProjetReadonly({
     entry.count += 1;
     counts.set(statut.label, entry);
   }
+  return counts;
+}
+
+function countLivrees(videoCounts: VideoCountRow[]) {
+  return groupVideoCounts(videoCounts).get("Livré")?.count ?? 0;
+}
+
+function ProjetReadonly({ projet, videoCounts }: { projet: Projet; videoCounts: VideoCountRow[] }) {
+  const counts = groupVideoCounts(videoCounts);
   return (
     <div className="grid grid-cols-2 gap-4 rounded-lg border border-zinc-200 bg-white p-5 text-sm">
       <Info label="Offre" value={projet.offres?.nom ?? "—"} />
@@ -187,9 +195,13 @@ function ProjetReadonly({
           />
         }
       />
+      <Info
+        label="Vidéos commandées / livrées"
+        value={`${projet.nombre_commande} / ${counts.get("Livré")?.count ?? 0}`}
+      />
       <div className="col-span-2">
         <Info
-          label="Vidéos"
+          label="Détail par statut"
           value={
             counts.size === 0 ? (
               "—"

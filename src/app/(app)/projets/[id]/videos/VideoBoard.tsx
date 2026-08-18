@@ -1,13 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { Video, Statut, Prestataire, UserRole } from "@/types/database";
+import type { Video, Statut, Prestataire, Interviewe, UserRole } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
+
+function contactLabel(i: Pick<Interviewe, "nom" | "prenom">) {
+  return [i.prenom, i.nom].filter(Boolean).join(" ") || "Sans nom";
+}
 
 interface Props {
   statuts: Statut[];
   videos: Video[];
   prestataires: Prestataire[];
+  interviewes: Interviewe[];
   role: UserRole;
   currentPrestataireId: string | null;
   createAction: (formData: FormData) => Promise<void>;
@@ -20,6 +25,7 @@ export function VideoBoard({
   statuts,
   videos,
   prestataires,
+  interviewes,
   role,
   currentPrestataireId,
   createAction,
@@ -47,7 +53,7 @@ export function VideoBoard({
                 await createAction(fd);
                 setShowAdd(false);
               }}
-              className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-4"
+              className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-5"
             >
               <input name="titre" placeholder="Titre (optionnel)" className="input" />
               <select name="prestataire_id" defaultValue="" className="input">
@@ -58,11 +64,19 @@ export function VideoBoard({
                   </option>
                 ))}
               </select>
+              <select name="interviewe_id" defaultValue="" className="input">
+                <option value="">— Contact —</option>
+                {interviewes.map((i) => (
+                  <option key={i.id} value={i.id}>
+                    {contactLabel(i)}
+                  </option>
+                ))}
+              </select>
               <input type="date" name="date_tournage" title="Date de tournage" className="input" />
               <input type="date" name="date_livraison" title="Date de livraison" className="input" />
               <button
                 type="submit"
-                className="col-span-2 w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark sm:col-span-4"
+                className="col-span-2 w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark sm:col-span-5"
               >
                 Créer
               </button>
@@ -91,6 +105,7 @@ export function VideoBoard({
                     video={video}
                     statuts={statuts}
                     prestataires={prestataires}
+                    interviewes={interviewes}
                     canEditStatut={isAdmin || video.prestataire_id === currentPrestataireId}
                     canEditFull={isAdmin}
                     updateAction={updateAction}
@@ -112,6 +127,7 @@ function VideoCard({
   video,
   statuts,
   prestataires,
+  interviewes,
   canEditStatut,
   canEditFull,
   updateAction,
@@ -121,6 +137,7 @@ function VideoCard({
   video: Video;
   statuts: Statut[];
   prestataires: Prestataire[];
+  interviewes: Interviewe[];
   canEditStatut: boolean;
   canEditFull: boolean;
   updateAction: (videoId: string, formData: FormData) => Promise<void>;
@@ -153,6 +170,9 @@ function VideoCard({
             )}
           </div>
           {video.prestataires && <p className="mt-1 text-xs text-zinc-500">{video.prestataires.nom}</p>}
+          {video.interviewes && (
+            <p className="mt-0.5 text-xs text-zinc-400">🎤 {contactLabel(video.interviewes)}</p>
+          )}
           {(video.date_tournage || video.date_livraison) && (
             <p className={`mt-1 text-xs ${overdue ? "font-medium text-red-600" : "text-zinc-400"}`}>
               {video.date_tournage && `Tournage : ${formatDate(video.date_tournage)}`}
@@ -193,6 +213,14 @@ function VideoCard({
               {prestataires.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nom}
+                </option>
+              ))}
+            </select>
+            <select name="interviewe_id" defaultValue={video.interviewe_id ?? ""} className="input">
+              <option value="">— Contact —</option>
+              {interviewes.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {contactLabel(i)}
                 </option>
               ))}
             </select>

@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Video, Statut, Prestataire } from "@/types/database";
+import type { Video, Statut, Prestataire, Interviewe } from "@/types/database";
 import { VideoBoard } from "./VideoBoard";
 import { createVideo, updateVideo, updateVideoStatut, deleteVideo } from "./actions";
 
@@ -14,14 +14,15 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
   const { data: projet } = await supabase.from("projets").select("id, nom").eq("id", id).single();
   if (!projet) notFound();
 
-  const [{ data: videos }, { data: statuts }, { data: prestataires }] = await Promise.all([
+  const [{ data: videos }, { data: statuts }, { data: prestataires }, { data: interviewes }] = await Promise.all([
     supabase
       .from("videos")
-      .select("*, statuts(*), prestataires(*)")
+      .select("*, statuts(*), prestataires(*), interviewes(*)")
       .eq("projet_id", id)
       .order("created_at"),
     supabase.from("statuts").select("*").eq("type", "video").order("ordre"),
     supabase.from("prestataires").select("*").order("nom"),
+    supabase.from("interviewes").select("id, nom, prenom").eq("projet_id", id).order("created_at"),
   ]);
 
   const boundCreate = async (formData: FormData) => {
@@ -55,6 +56,7 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
         statuts={(statuts ?? []) as Statut[]}
         videos={(videos ?? []) as Video[]}
         prestataires={(prestataires ?? []) as Prestataire[]}
+        interviewes={(interviewes ?? []) as Interviewe[]}
         role={profile.role}
         currentPrestataireId={profile.prestataire_id}
         createAction={boundCreate}

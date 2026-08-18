@@ -29,6 +29,7 @@ export async function createVideo(projetId: string, formData: FormData) {
     titre: str(formData, "titre"),
     statut_id: premierStatut?.id ?? null,
     prestataire_id: str(formData, "prestataire_id"),
+    interviewe_id: str(formData, "interviewe_id"),
     date_tournage: str(formData, "date_tournage"),
     date_livraison: str(formData, "date_livraison"),
   });
@@ -49,6 +50,7 @@ export async function updateVideo(projetId: string, videoId: string, formData: F
       titre: str(formData, "titre"),
       statut_id: str(formData, "statut_id"),
       prestataire_id: str(formData, "prestataire_id"),
+      interviewe_id: str(formData, "interviewe_id"),
       date_tournage: str(formData, "date_tournage"),
       date_livraison: str(formData, "date_livraison"),
       notes: str(formData, "notes"),

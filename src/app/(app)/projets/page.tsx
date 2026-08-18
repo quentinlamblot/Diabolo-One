@@ -19,13 +19,12 @@ export default async function ProjetsPage() {
 
   const list = (projets ?? []) as Projet[];
 
-  const videoStats = new Map<string, { total: number; livrees: number }>();
+  const livreesParProjet = new Map<string, number>();
   for (const v of videos ?? []) {
     const statut = Array.isArray(v.statuts) ? v.statuts[0] : v.statuts;
-    const entry = videoStats.get(v.projet_id) ?? { total: 0, livrees: 0 };
-    entry.total += 1;
-    if (statut?.label === "Livré") entry.livrees += 1;
-    videoStats.set(v.projet_id, entry);
+    if (statut?.label === "Livré") {
+      livreesParProjet.set(v.projet_id, (livreesParProjet.get(v.projet_id) ?? 0) + 1);
+    }
   }
 
   return (
@@ -94,9 +93,7 @@ export default async function ProjetsPage() {
                   </td>
                   <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
                     <Link href={`/projets/${p.id}/videos`} className="hover:underline">
-                      {videoStats.get(p.id)
-                        ? `${videoStats.get(p.id)!.livrees} livrée(s) / ${videoStats.get(p.id)!.total}`
-                        : "—"}
+                      {livreesParProjet.get(p.id) ?? 0} livrée(s) / {p.nombre_commande} commandée(s)
                     </Link>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">

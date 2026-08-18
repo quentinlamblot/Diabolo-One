@@ -80,7 +80,21 @@ export function ProjetForm({ clients, offres, statuts, projet, action, submitLab
             <option value="ok">OK</option>
           </select>
         </Field>
+        <Field label="Nombre de vidéos commandées">
+          <input
+            type="number"
+            min={0}
+            name="nombre_commande"
+            defaultValue={projet?.nombre_commande ?? 0}
+            className="input"
+          />
+        </Field>
       </div>
+      {projet && (
+        <p className="-mt-4 text-xs text-zinc-500">
+          Augmenter ce nombre crée automatiquement les fiches vidéo manquantes en statut « à tourner ».
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Lien édito">

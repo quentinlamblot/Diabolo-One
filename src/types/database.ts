@@ -73,6 +73,7 @@ export interface Projet {
   infos_complementaires: string | null;
   statut_id: string | null;
   charte_graphique: CharteStatus;
+  nombre_commande: number;
   instructions_individuelles: string | null;
   lien_edito: string | null;
   lien_riverside: string | null;
