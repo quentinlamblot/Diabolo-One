@@ -1,9 +1,14 @@
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { Dashboard } from "./Dashboard";
 
 export default async function Home() {
   const profile = await requireProfile();
+
+  if (profile.role === "admin") {
+    return <Dashboard />;
+  }
 
   if (profile.role === "client" && profile.client_id) {
     const supabase = await createClient();
