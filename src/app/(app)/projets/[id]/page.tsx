@@ -3,11 +3,12 @@ import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import type { Client, Offre, Statut, Projet, Prestataire } from "@/types/database";
+import type { Client, Offre, Statut, Projet, Prestataire, OnboardingReponse } from "@/types/database";
 import { ProjetForm } from "../ProjetForm";
 import { updateProjet, deleteProjet, assignPrestataire, unassignPrestataire } from "../actions";
 import { DeleteButton } from "./DeleteButton";
 import { AssignPrestataire } from "./AssignPrestataire";
+import { ONBOARDING_SECTIONS } from "../../onboarding/questions";
 
 export default async function ProjetDetailPage({ params }: PageProps<"/projets/[id]">) {
   const { id } = await params;
@@ -29,13 +30,14 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
   };
 
   if (profile.role === "admin") {
-    const [{ data: clients }, { data: offres }, { data: statuts }, { data: assignations }, { data: allPrestataires }] =
+    const [{ data: clients }, { data: offres }, { data: statuts }, { data: assignations }, { data: allPrestataires }, { data: onboarding }] =
       await Promise.all([
         supabase.from("clients").select("*").order("nom"),
         supabase.from("offres").select("*").order("nom"),
         supabase.from("statuts").select("*").eq("type", "projet").order("ordre"),
         supabase.from("projet_prestataires").select("*, prestataires(*)").eq("projet_id", id),
         supabase.from("prestataires").select("*").order("nom"),
+        supabase.from("onboarding_reponses").select("*").eq("projet_id", id).maybeSingle(),
       ]);
 
     const assignedIds = new Set((assignations ?? []).map((a) => a.prestataire_id));
@@ -97,6 +99,8 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           </div>
           <AssignPrestataire available={available} action={boundAssign} />
         </div>
+
+        {onboarding && <BriefClient reponses={(onboarding as OnboardingReponse).reponses} />}
       </div>
     );
   }
@@ -232,6 +236,26 @@ function ProjetReadonly({ projet, videoCounts }: { projet: Projet; videoCounts: 
         </div>
       )}
     </div>
+  );
+}
+
+function BriefClient({ reponses }: { reponses: Record<string, string> }) {
+  return (
+    <details className="rounded-lg border border-zinc-200 bg-white p-5">
+      <summary className="cursor-pointer text-sm font-semibold text-zinc-900">Brief client (onboarding)</summary>
+      <div className="mt-4 flex flex-col gap-5">
+        {ONBOARDING_SECTIONS.map((section) => (
+          <div key={section.title}>
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-sky-dark">{section.title}</h3>
+            <div className="flex flex-col gap-2">
+              {section.questions.map((q) => (
+                <Info key={q.key} label={q.label} value={reponses[q.key] || "—"} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
   );
 }
 

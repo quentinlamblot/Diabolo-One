@@ -72,8 +72,14 @@ export function VideoBoard({
                   </option>
                 ))}
               </select>
-              <input type="date" name="date_tournage" title="Date de tournage" className="input" />
-              <input type="date" name="date_livraison" title="Date de livraison" className="input" />
+              <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+                Date de tournage
+                <input type="date" name="date_tournage" className="input" />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+                Date de livraison
+                <input type="date" name="date_livraison" className="input" />
+              </label>
               <button
                 type="submit"
                 className="col-span-2 w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark sm:col-span-5"
@@ -231,8 +237,14 @@ function VideoCard({
                 </option>
               ))}
             </select>
-            <input type="date" name="date_tournage" defaultValue={video.date_tournage ?? ""} className="input" />
-            <input type="date" name="date_livraison" defaultValue={video.date_livraison ?? ""} className="input" />
+            <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+              Date de tournage
+              <input type="date" name="date_tournage" defaultValue={video.date_tournage ?? ""} className="input" />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+              Date de livraison
+              <input type="date" name="date_livraison" defaultValue={video.date_livraison ?? ""} className="input" />
+            </label>
             <textarea
               name="notes"
               defaultValue={video.notes ?? ""}

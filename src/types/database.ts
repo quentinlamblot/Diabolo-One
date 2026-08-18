@@ -126,6 +126,14 @@ export interface IntervieweChamp {
   created_at: string;
 }
 
+export interface OnboardingReponse {
+  id: string;
+  projet_id: string;
+  reponses: Record<string, string>;
+  submitted_by: string | null;
+  created_at: string;
+}
+
 export interface Commentaire {
   id: string;
   projet_id: string;
