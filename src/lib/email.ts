@@ -1,4 +1,20 @@
-const FROM_ADDRESS = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
+import nodemailer from "nodemailer";
+
+let transporter: ReturnType<typeof nodemailer.createTransport> | null = null;
+
+function getTransporter() {
+  if (transporter) return transporter;
+
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+
+  transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+  return transporter;
+}
 
 export async function sendEmail({
   to,
@@ -9,23 +25,20 @@ export async function sendEmail({
   subject: string;
   html: string;
 }): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("RESEND_API_KEY manquant : email non envoyé.", { to, subject });
+  const t = getTransporter();
+  if (!t) {
+    console.warn("GMAIL_USER / GMAIL_APP_PASSWORD manquant : email non envoyé.", { to, subject });
     return;
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from: FROM_ADDRESS, to, subject, html }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    console.error("Échec de l'envoi d'email Resend:", res.status, body);
+  try {
+    await t.sendMail({
+      from: `Gestion Projet <${process.env.GMAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
+  } catch (err) {
+    console.error("Échec de l'envoi d'email:", err);
   }
 }
