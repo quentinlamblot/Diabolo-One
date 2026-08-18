@@ -17,7 +17,9 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
   const [{ data: videos }, { data: statuts }, { data: prestataires }, { data: interviewes }] = await Promise.all([
     supabase
       .from("videos")
-      .select("*, statuts(*), prestataires(*), interviewes(*)")
+      .select(
+        "*, statuts(*), prestataire_tournage:prestataire_tournage_id(*), prestataire_montage:prestataire_montage_id(*), interviewes(*)"
+      )
       .eq("projet_id", id)
       .order("created_at"),
     supabase.from("statuts").select("*").eq("type", "video").order("ordre"),

@@ -77,6 +77,8 @@ export interface Projet {
   statut_id: string | null;
   charte_graphique: CharteStatus;
   nombre_commande: number;
+  prestataire_tournage_defaut_id: string | null;
+  prestataire_montage_defaut_id: string | null;
   instructions_individuelles: string | null;
   lien_edito: string | null;
   lien_riverside: string | null;
@@ -109,7 +111,8 @@ export interface Video {
   projet_id: string;
   titre: string | null;
   statut_id: string | null;
-  prestataire_id: string | null;
+  prestataire_tournage_id: string | null;
+  prestataire_montage_id: string | null;
   interviewe_id: string | null;
   date_tournage: string | null;
   date_livraison: string | null;
@@ -118,7 +121,8 @@ export interface Video {
   created_at: string;
   updated_at: string;
   statuts?: Statut;
-  prestataires?: Prestataire;
+  prestataire_tournage?: Prestataire;
+  prestataire_montage?: Prestataire;
   interviewes?: Interviewe;
 }
 

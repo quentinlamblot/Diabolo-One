@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/Badge";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
-import { buildEcheances, groupByUrgence, one, type VideoForEcheance } from "@/lib/echeances";
+import { buildEcheances, dernierOrdre, groupByUrgence, one, type VideoForEcheance } from "@/lib/echeances";
 
 interface ProjetRow {
   id: string;
@@ -16,18 +16,22 @@ export async function Dashboard() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: projets }, { data: videos }] = await Promise.all([
+  const [{ data: projets }, { data: videos }, { data: statutsVideo }] = await Promise.all([
     supabase.from("projets").select("id, nom, nombre_commande, clients(nom), statuts(label, couleur)").order("created_at", { ascending: false }),
     supabase
       .from("videos")
-      .select("id, projet_id, titre, date_tournage, date_livraison, statuts(label, couleur), prestataires(id, nom)"),
+      .select(
+        "id, projet_id, titre, date_tournage, date_livraison, statuts(ordre, label, couleur), prestataire_tournage:prestataire_tournage_id(id, nom), prestataire_montage:prestataire_montage_id(id, nom)"
+      ),
+    supabase.from("statuts").select("ordre").eq("type", "video"),
   ]);
 
   const projetList = (projets ?? []) as ProjetRow[];
   const videoList = (videos ?? []) as VideoForEcheance[];
   const projetNomById = new Map(projetList.map((p) => [p.id, p.nom]));
+  const maxOrdre = dernierOrdre(statutsVideo ?? []);
 
-  const echeances = buildEcheances(videoList);
+  const echeances = buildEcheances(videoList, maxOrdre);
   const groups = groupByUrgence(echeances, today);
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();
@@ -35,7 +39,7 @@ export async function Dashboard() {
     const statut = one(v.statuts);
     const entry = parProjet.get(v.projet_id) ?? { total: 0, livrees: 0, parStatut: new Map() };
     entry.total += 1;
-    if (statut?.label === "Livré") entry.livrees += 1;
+    if (statut && statut.ordre >= maxOrdre) entry.livrees += 1;
     if (statut) {
       const s = entry.parStatut.get(statut.label) ?? { count: 0, couleur: statut.couleur };
       s.count += 1;
@@ -44,18 +48,26 @@ export async function Dashboard() {
     parProjet.set(v.projet_id, entry);
   }
 
+  // Charge de travail : une vidéo pas encore tournée (1ère étape) est le
+  // travail actif du tourneur, une vidéo tournée mais pas encore livrée
+  // (étapes intermédiaires) est celui du monteur — chacun ne voit que ce
+  // qui est réellement dans son camp.
   const charge = new Map<string, { nom: string; actives: number; enRetard: number }>();
-  for (const v of videoList) {
-    const statut = one(v.statuts);
-    if (statut?.label === "Livré") continue;
-    const presta = one(v.prestataires);
+  function ajouterCharge(presta: { id: string; nom: string } | null, enRetard: boolean) {
     const key = presta?.id ?? "__non_assigne__";
     const entry = charge.get(key) ?? { nom: presta?.nom ?? "Non assigné", actives: 0, enRetard: 0 };
     entry.actives += 1;
-    if ((v.date_tournage && v.date_tournage < today) || (v.date_livraison && v.date_livraison < today)) {
-      entry.enRetard += 1;
-    }
+    if (enRetard) entry.enRetard += 1;
     charge.set(key, entry);
+  }
+  for (const v of videoList) {
+    const statut = one(v.statuts);
+    if (!statut || statut.ordre >= maxOrdre) continue;
+    if (statut.ordre === 0) {
+      ajouterCharge(one(v.prestataire_tournage), !!(v.date_tournage && v.date_tournage < today));
+    } else {
+      ajouterCharge(one(v.prestataire_montage), !!(v.date_livraison && v.date_livraison < today));
+    }
   }
   const chargeList = Array.from(charge.values()).sort((a, b) => b.actives - a.actives);
 

@@ -1,32 +1,32 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
-import { buildEcheances, groupByUrgence, type VideoForEcheance } from "@/lib/echeances";
+import { buildEcheances, dernierOrdre, groupByUrgence, type VideoForEcheance } from "@/lib/echeances";
 
 export async function PrestataireDashboard({ prestataireId, nom }: { prestataireId: string; nom: string }) {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: videos }, { data: assignations }] = await Promise.all([
+  const [{ data: videos }, { data: assignations }, { data: statutsVideo }] = await Promise.all([
     supabase
       .from("videos")
-      .select("id, projet_id, titre, date_tournage, date_livraison, statuts(label, couleur), prestataires(id, nom)"),
+      .select(
+        "id, projet_id, titre, date_tournage, date_livraison, statuts(ordre, label, couleur), prestataire_tournage:prestataire_tournage_id(id, nom), prestataire_montage:prestataire_montage_id(id, nom)"
+      ),
     supabase.from("projet_prestataires").select("projets(id, nom, statuts(label, couleur))").eq("prestataire_id", prestataireId),
+    supabase.from("statuts").select("ordre").eq("type", "video"),
   ]);
 
-  const mesVideos = ((videos ?? []) as VideoForEcheance[]).filter((v) => {
-    const presta = Array.isArray(v.prestataires) ? v.prestataires[0] : v.prestataires;
-    return presta?.id === prestataireId;
-  });
+  const maxOrdre = dernierOrdre(statutsVideo ?? []);
+  const toutesLesEcheances = buildEcheances((videos ?? []) as VideoForEcheance[], maxOrdre);
+  const echeances = toutesLesEcheances.filter((e) => e.prestataireId === prestataireId);
+  const groups = groupByUrgence(echeances, today);
 
-  const projetNomById = new Map(mesVideos.map((v) => [v.projet_id, ""]));
+  const projetNomById = new Map<string, string>();
   for (const a of assignations ?? []) {
     const projet = Array.isArray(a.projets) ? a.projets[0] : a.projets;
     if (projet) projetNomById.set(projet.id, projet.nom);
   }
-
-  const echeances = buildEcheances(mesVideos);
-  const groups = groupByUrgence(echeances, today);
 
   const mesProjets = (assignations ?? [])
     .map((a) => (Array.isArray(a.projets) ? a.projets[0] : a.projets))

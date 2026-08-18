@@ -35,6 +35,7 @@ export function VideoBoard({
 }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const isAdmin = role === "admin";
+  const maxOrdre = statuts.length > 0 ? Math.max(...statuts.map((s) => s.ordre)) : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -53,11 +54,19 @@ export function VideoBoard({
                 await createAction(fd);
                 setShowAdd(false);
               }}
-              className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-5"
+              className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-3"
             >
               <input name="titre" placeholder="Titre (optionnel)" className="input" />
-              <select name="prestataire_id" defaultValue="" className="input">
-                <option value="">— Prestataire —</option>
+              <select name="prestataire_tournage_id" defaultValue="" className="input" title="Responsable tournage">
+                <option value="">— Responsable tournage —</option>
+                {prestataires.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom}
+                  </option>
+                ))}
+              </select>
+              <select name="prestataire_montage_id" defaultValue="" className="input" title="Responsable montage">
+                <option value="">— Responsable montage —</option>
                 {prestataires.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nom}
@@ -82,7 +91,7 @@ export function VideoBoard({
               </label>
               <button
                 type="submit"
-                className="col-span-2 w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark sm:col-span-5"
+                className="col-span-2 w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark sm:col-span-3"
               >
                 Créer
               </button>
@@ -110,9 +119,14 @@ export function VideoBoard({
                     key={video.id}
                     video={video}
                     statuts={statuts}
+                    maxOrdre={maxOrdre}
                     prestataires={prestataires}
                     interviewes={interviewes}
-                    canEditStatut={isAdmin || video.prestataire_id === currentPrestataireId}
+                    canEditStatut={
+                      isAdmin ||
+                      video.prestataire_tournage_id === currentPrestataireId ||
+                      video.prestataire_montage_id === currentPrestataireId
+                    }
                     canEditFull={isAdmin}
                     updateAction={updateAction}
                     updateStatutAction={updateStatutAction}
@@ -132,6 +146,7 @@ export function VideoBoard({
 function VideoCard({
   video,
   statuts,
+  maxOrdre,
   prestataires,
   interviewes,
   canEditStatut,
@@ -142,6 +157,7 @@ function VideoCard({
 }: {
   video: Video;
   statuts: Statut[];
+  maxOrdre: number;
   prestataires: Prestataire[];
   interviewes: Interviewe[];
   canEditStatut: boolean;
@@ -152,8 +168,15 @@ function VideoCard({
 }) {
   const [editing, setEditing] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
-  const isLivre = video.statuts?.label === "Livré";
-  const tournageEnRetard = !isLivre && video.date_tournage !== null && video.date_tournage < today;
+  // Les statuts sont personnalisables (libellé) : on se base sur la
+  // position dans le pipeline (ordre) plutôt que sur le texte, qui peut
+  // être renommé par l'admin (ex. "Tourné" → "Booké").
+  const ordreActuel = video.statuts?.ordre;
+  const isLivre = ordreActuel !== undefined && ordreActuel >= maxOrdre;
+  // Le tournage n'est "en retard" que tant qu'il n'a pas encore eu lieu :
+  // une fois la vidéo passée à l'étape suivante, la date de tournage
+  // passée n'est plus une alerte.
+  const tournageEnRetard = ordreActuel === 0 && video.date_tournage !== null && video.date_tournage < today;
   const livraisonEnRetard = !isLivre && video.date_livraison !== null && video.date_livraison < today;
   const overdue = tournageEnRetard || livraisonEnRetard;
 
@@ -174,7 +197,13 @@ function VideoCard({
               </button>
             )}
           </div>
-          {video.prestataires && <p className="mt-1 text-xs text-zinc-500">{video.prestataires.nom}</p>}
+          {(video.prestataire_tournage || video.prestataire_montage) && (
+            <p className="mt-1 text-xs text-zinc-500">
+              {video.prestataire_tournage && <>🎥 {video.prestataire_tournage.nom}</>}
+              {video.prestataire_tournage && video.prestataire_montage && " · "}
+              {video.prestataire_montage && <>✂️ {video.prestataire_montage.nom}</>}
+            </p>
+          )}
           {video.interviewes && (
             <p className="mt-0.5 text-xs text-zinc-400">🎤 {contactLabel(video.interviewes)}</p>
           )}
@@ -221,8 +250,16 @@ function VideoCard({
                 </option>
               ))}
             </select>
-            <select name="prestataire_id" defaultValue={video.prestataire_id ?? ""} className="input">
-              <option value="">— Prestataire —</option>
+            <select name="prestataire_tournage_id" defaultValue={video.prestataire_tournage_id ?? ""} className="input">
+              <option value="">— Responsable tournage —</option>
+              {prestataires.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nom}
+                </option>
+              ))}
+            </select>
+            <select name="prestataire_montage_id" defaultValue={video.prestataire_montage_id ?? ""} className="input">
+              <option value="">— Responsable montage —</option>
               {prestataires.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nom}

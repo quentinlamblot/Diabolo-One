@@ -1,19 +1,20 @@
 "use client";
 
-import type { Client, Offre, Statut, Projet } from "@/types/database";
+import type { Client, Offre, Statut, Projet, Prestataire } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
 
 interface Props {
   clients: Client[];
   offres: Offre[];
   statuts: Statut[];
+  prestataires: Prestataire[];
   projet?: Projet;
   action: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
   autosave?: boolean;
 }
 
-export function ProjetForm({ clients, offres, statuts, projet, action, submitLabel, autosave }: Props) {
+export function ProjetForm({ clients, offres, statuts, prestataires, projet, action, submitLabel, autosave }: Props) {
   const fields = (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -95,6 +96,33 @@ export function ProjetForm({ clients, offres, statuts, projet, action, submitLab
           Augmenter ce nombre crée automatiquement les fiches vidéo manquantes en statut « à tourner ».
         </p>
       )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Responsable tournage par défaut">
+          <select name="prestataire_tournage_defaut_id" defaultValue={projet?.prestataire_tournage_defaut_id ?? ""} className="input">
+            <option value="">— Aucun —</option>
+            {prestataires.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nom}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Responsable montage par défaut">
+          <select name="prestataire_montage_defaut_id" defaultValue={projet?.prestataire_montage_defaut_id ?? ""} className="input">
+            <option value="">— Aucun —</option>
+            {prestataires.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nom}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <p className="-mt-4 text-xs text-zinc-500">
+        Appliqué automatiquement aux nouvelles vidéos et à celles qui entrent dans l&apos;étape correspondante sans
+        responsable déjà assigné.
+      </p>
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Lien édito">

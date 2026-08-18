@@ -87,6 +87,7 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           clients={(clients ?? []) as Client[]}
           offres={(offres ?? []) as Offre[]}
           statuts={(statuts ?? []) as Statut[]}
+          prestataires={(allPrestataires ?? []) as Prestataire[]}
           projet={projet as Projet}
           action={boundUpdate}
           autosave
