@@ -21,18 +21,13 @@ function one<T>(v: T | T[] | null): T | null {
 export async function ClientDashboard({ clientId, nom }: { clientId: string; nom: string }) {
   const supabase = await createClient();
 
-  const [{ data: projets }, { data: videos }, { data: commentaires }] = await Promise.all([
+  const [{ data: projets }, { data: videos }] = await Promise.all([
     supabase
       .from("projets")
       .select("id, nom, nombre_commande, statuts(label, couleur)")
       .eq("client_id", clientId)
       .order("created_at", { ascending: false }),
     supabase.from("videos").select("projet_id, statuts(label, couleur)"),
-    supabase
-      .from("commentaires")
-      .select("id, contenu, created_at, projets(nom)")
-      .order("created_at", { ascending: false })
-      .limit(5),
   ]);
 
   const projetList = (projets ?? []) as ProjetRow[];
@@ -102,23 +97,6 @@ export async function ClientDashboard({ clientId, nom }: { clientId: string; nom
             );
           })}
         </div>
-      )}
-
-      {commentaires && commentaires.length > 0 && (
-        <section className="rounded-lg border border-zinc-200 bg-white p-5">
-          <h2 className="mb-3 text-sm font-semibold text-zinc-900">Derniers messages</h2>
-          <div className="flex flex-col divide-y divide-zinc-100">
-            {commentaires.map((c) => {
-              const projet = one(c.projets as { nom: string } | { nom: string }[] | null);
-              return (
-                <div key={c.id} className="py-2.5 text-sm">
-                  <p className="text-zinc-400">{projet?.nom}</p>
-                  <p className="text-zinc-700">{c.contenu}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
       )}
     </div>
   );
