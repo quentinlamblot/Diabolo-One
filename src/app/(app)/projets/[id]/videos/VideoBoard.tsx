@@ -147,10 +147,9 @@ function VideoCard({
   const [editing, setEditing] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
   const isLivre = video.statuts?.label === "Livré";
-  const overdue =
-    !isLivre &&
-    ((video.date_tournage !== null && video.date_tournage < today) ||
-      (video.date_livraison !== null && video.date_livraison < today));
+  const tournageEnRetard = !isLivre && video.date_tournage !== null && video.date_tournage < today;
+  const livraisonEnRetard = !isLivre && video.date_livraison !== null && video.date_livraison < today;
+  const overdue = tournageEnRetard || livraisonEnRetard;
 
   return (
     <div className={`rounded-lg border bg-white p-3 text-sm shadow-sm ${overdue ? "border-red-300" : "border-zinc-200"}`}>
@@ -174,10 +173,18 @@ function VideoCard({
             <p className="mt-0.5 text-xs text-zinc-400">🎤 {contactLabel(video.interviewes)}</p>
           )}
           {(video.date_tournage || video.date_livraison) && (
-            <p className={`mt-1 text-xs ${overdue ? "font-medium text-red-600" : "text-zinc-400"}`}>
-              {video.date_tournage && `Tournage : ${formatDate(video.date_tournage)}`}
+            <p className="mt-1 text-xs text-zinc-400">
+              {video.date_tournage && (
+                <span className={tournageEnRetard ? "font-medium text-red-600" : ""}>
+                  Tournage : {formatDate(video.date_tournage)}
+                </span>
+              )}
               {video.date_tournage && video.date_livraison && " · "}
-              {video.date_livraison && `Livraison : ${formatDate(video.date_livraison)}`}
+              {video.date_livraison && (
+                <span className={livraisonEnRetard ? "font-medium text-red-600" : ""}>
+                  Livraison : {formatDate(video.date_livraison)}
+                </span>
+              )}
             </p>
           )}
           {canEditStatut && (

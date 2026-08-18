@@ -40,12 +40,18 @@ export async function Dashboard() {
   const projetById = new Map(projetList.map((p) => [p.id, p]));
 
   const enRetard = videoList
-    .filter((v) => {
+    .map((v) => {
       const statut = one(v.statuts);
-      if (statut?.label === "Livré") return false;
-      return (v.date_tournage && v.date_tournage < today) || (v.date_livraison && v.date_livraison < today);
+      const tournageEnRetard = statut?.label !== "Livré" && !!v.date_tournage && v.date_tournage < today;
+      const livraisonEnRetard = statut?.label !== "Livré" && !!v.date_livraison && v.date_livraison < today;
+      return { ...v, tournageEnRetard, livraisonEnRetard };
     })
-    .sort((a, b) => (a.date_livraison ?? a.date_tournage ?? "").localeCompare(b.date_livraison ?? b.date_tournage ?? ""));
+    .filter((v) => v.tournageEnRetard || v.livraisonEnRetard)
+    .sort((a, b) => {
+      const da = a.tournageEnRetard ? a.date_tournage! : a.date_livraison!;
+      const db = b.tournageEnRetard ? b.date_tournage! : b.date_livraison!;
+      return da.localeCompare(db);
+    });
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();
   for (const v of videoList) {
@@ -94,7 +100,6 @@ export async function Dashboard() {
             {enRetard.map((v) => {
               const projet = projetById.get(v.projet_id);
               const presta = one(v.prestataires);
-              const dueDate = v.date_livraison ?? v.date_tournage!;
               return (
                 <Link
                   key={v.id}
@@ -107,7 +112,12 @@ export async function Dashboard() {
                   </div>
                   <div className="flex items-center gap-3 text-zinc-500">
                     {presta && <span>{presta.nom}</span>}
-                    <span className="font-medium text-red-600">{formatDate(dueDate)}</span>
+                    {v.tournageEnRetard && (
+                      <span className="font-medium text-red-600">Tournage {formatDate(v.date_tournage!)}</span>
+                    )}
+                    {v.livraisonEnRetard && (
+                      <span className="font-medium text-red-600">Livraison {formatDate(v.date_livraison!)}</span>
+                    )}
                   </div>
                 </Link>
               );
