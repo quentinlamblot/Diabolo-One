@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { ONBOARDING_SECTIONS } from "./questions";
 
 const FORMATS_VALIDES = ["16:9", "9:16", "16:9 et 9:16"];
@@ -48,6 +47,4 @@ export async function submitOnboarding(projetId: string, formData: FormData) {
     const admin = createAdminClient();
     await admin.from("projets").update(projetUpdate).eq("id", projetId);
   }
-
-  redirect(`/projets/${projetId}/contacts`);
 }

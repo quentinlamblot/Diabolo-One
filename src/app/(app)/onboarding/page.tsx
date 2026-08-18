@@ -37,7 +37,7 @@ export default async function OnboardingPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center py-8">
-      <OnboardingWizard clientNom={client?.nom ?? profile.full_name ?? ""} action={boundSubmit} />
+      <OnboardingWizard clientNom={client?.nom ?? profile.full_name ?? ""} projetId={projetId} action={boundSubmit} />
     </div>
   );
 }
