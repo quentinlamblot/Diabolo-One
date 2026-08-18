@@ -14,6 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/admin/clients", label: "Clients" },
     { href: "/admin/prestataires", label: "Prestataires" },
     { href: "/admin/offres", label: "Offres" },
+    { href: "/admin/statuts", label: "Statuts" },
   ];
 
   const roleLabel: Record<string, string> = {
@@ -55,9 +56,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 </div>
               </details>
 
-              <Link href="/admin/statuts" className={navLinkClass}>
-                Statuts
-              </Link>
               <Link href="/admin/paiements" className={navLinkClass}>
                 Paiements
               </Link>
