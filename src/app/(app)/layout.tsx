@@ -30,11 +30,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Logo markColor="#8cc5f4" markClassName="h-8 w-8" wordmarkClassName="text-lg text-sky" />
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {(profile.role === "admin" || profile.role === "client") && (
-            <Link href="/" className={navLinkClass}>
-              Tableau de bord
-            </Link>
-          )}
+          <Link href="/" className={navLinkClass}>
+            Tableau de bord
+          </Link>
           <Link href="/projets" className={navLinkClass}>
             Projets
           </Link>

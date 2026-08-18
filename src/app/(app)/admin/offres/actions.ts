@@ -18,6 +18,7 @@ export async function createOffreEntry(formData: FormData) {
     nom: str(formData, "nom"),
     description: str(formData, "description"),
     prix: prixRaw ? Number(prixRaw) : null,
+    type_interview: str(formData, "type_interview") ?? "courte",
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/offres");
@@ -33,6 +34,7 @@ export async function updateOffreEntry(offreId: string, formData: FormData) {
       nom: str(formData, "nom"),
       description: str(formData, "description"),
       prix: prixRaw ? Number(prixRaw) : null,
+      type_interview: str(formData, "type_interview") ?? "courte",
     })
     .eq("id", offreId);
   if (error) throw new Error(error.message);

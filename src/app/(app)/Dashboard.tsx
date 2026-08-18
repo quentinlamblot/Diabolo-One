@@ -1,16 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/Badge";
-
-interface VideoRow {
-  id: string;
-  projet_id: string;
-  titre: string | null;
-  date_tournage: string | null;
-  date_livraison: string | null;
-  statuts: { label: string; couleur: string } | { label: string; couleur: string }[] | null;
-  prestataires: { id: string; nom: string } | { id: string; nom: string }[] | null;
-}
+import { EcheancesPanel } from "@/components/EcheancesPanel";
+import { buildEcheances, groupByUrgence, one, type VideoForEcheance } from "@/lib/echeances";
 
 interface ProjetRow {
   id: string;
@@ -18,10 +10,6 @@ interface ProjetRow {
   nombre_commande: number;
   clients: { nom: string } | { nom: string }[] | null;
   statuts: { label: string; couleur: string } | { label: string; couleur: string }[] | null;
-}
-
-function one<T>(v: T | T[] | null): T | null {
-  return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
 export async function Dashboard() {
@@ -36,22 +24,11 @@ export async function Dashboard() {
   ]);
 
   const projetList = (projets ?? []) as ProjetRow[];
-  const videoList = (videos ?? []) as VideoRow[];
-  const projetById = new Map(projetList.map((p) => [p.id, p]));
+  const videoList = (videos ?? []) as VideoForEcheance[];
+  const projetNomById = new Map(projetList.map((p) => [p.id, p.nom]));
 
-  const enRetard = videoList
-    .map((v) => {
-      const statut = one(v.statuts);
-      const tournageEnRetard = statut?.label !== "Livré" && !!v.date_tournage && v.date_tournage < today;
-      const livraisonEnRetard = statut?.label !== "Livré" && !!v.date_livraison && v.date_livraison < today;
-      return { ...v, tournageEnRetard, livraisonEnRetard };
-    })
-    .filter((v) => v.tournageEnRetard || v.livraisonEnRetard)
-    .sort((a, b) => {
-      const da = a.tournageEnRetard ? a.date_tournage! : a.date_livraison!;
-      const db = b.tournageEnRetard ? b.date_tournage! : b.date_livraison!;
-      return da.localeCompare(db);
-    });
+  const echeances = buildEcheances(videoList);
+  const groups = groupByUrgence(echeances, today);
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();
   for (const v of videoList) {
@@ -83,47 +60,21 @@ export async function Dashboard() {
   const chargeList = Array.from(charge.values()).sort((a, b) => b.actives - a.actives);
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Tableau de bord</h1>
-        <p className="text-sm text-zinc-500">Vue d'ensemble de tous les projets</p>
+    <div className="relative flex flex-col gap-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-sky/15 blur-2xl"
+      />
+      <div className="relative">
+        <h1 className="text-2xl font-semibold text-zinc-900">
+          Tableau de bord <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sand align-middle" />
+        </h1>
+        <p className="text-sm text-zinc-500">Ce qu'il y a à faire, au jour le jour</p>
       </div>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-5">
-        <h2 className="mb-3 text-sm font-semibold text-zinc-900">
-          En retard <span className="font-normal text-zinc-400">({enRetard.length})</span>
-        </h2>
-        {enRetard.length === 0 ? (
-          <p className="text-sm text-zinc-500">Aucune vidéo en retard.</p>
-        ) : (
-          <div className="flex flex-col divide-y divide-zinc-100">
-            {enRetard.map((v) => {
-              const projet = projetById.get(v.projet_id);
-              const presta = one(v.prestataires);
-              return (
-                <Link
-                  key={v.id}
-                  href={`/projets/${v.projet_id}/videos`}
-                  className="flex items-center justify-between gap-3 py-2.5 text-sm hover:bg-zinc-50"
-                >
-                  <div>
-                    <span className="font-medium text-zinc-900">{projet?.nom ?? "Projet"}</span>
-                    <span className="text-zinc-400"> · {v.titre || "Vidéo sans titre"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-zinc-500">
-                    {presta && <span>{presta.nom}</span>}
-                    {v.tournageEnRetard && (
-                      <span className="font-medium text-red-600">Tournage {formatDate(v.date_tournage!)}</span>
-                    )}
-                    {v.livraisonEnRetard && (
-                      <span className="font-medium text-red-600">Livraison {formatDate(v.date_livraison!)}</span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+      <section className="relative">
+        <h2 className="mb-3 text-sm font-semibold text-zinc-900">À faire</h2>
+        <EcheancesPanel groups={groups} projetNomById={projetNomById} showPrestataire />
       </section>
 
       <section>
@@ -138,7 +89,7 @@ export async function Dashboard() {
               <Link
                 key={p.id}
                 href={`/projets/${p.id}`}
-                className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-white p-4 hover:border-sky-dark"
+                className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white p-4 transition-colors hover:border-sky-dark"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -163,7 +114,7 @@ export async function Dashboard() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 bg-white p-5">
+      <section className="rounded-2xl border border-zinc-200 bg-white p-5">
         <h2 className="mb-3 text-sm font-semibold text-zinc-900">Charge de travail par prestataire</h2>
         {chargeList.length === 0 ? (
           <p className="text-sm text-zinc-500">Aucune vidéo en cours.</p>
@@ -183,9 +134,4 @@ export async function Dashboard() {
       </section>
     </div>
   );
-}
-
-function formatDate(d: string) {
-  const [, m, day] = d.split("-");
-  return `${day}/${m}`;
 }

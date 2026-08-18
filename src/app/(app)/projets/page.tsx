@@ -31,7 +31,9 @@ export default async function ProjetsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Projets</h1>
+          <h1 className="text-2xl font-semibold text-zinc-900">
+            Projets <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sky align-middle" />
+          </h1>
           <p className="text-sm text-zinc-500">
             {list.length} projet{list.length > 1 ? "s" : ""}
           </p>
@@ -49,9 +51,9 @@ export default async function ProjetsPage() {
       {list.length === 0 ? (
         <p className="text-sm text-zinc-500">Aucun projet pour le moment.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
+        <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white">
           <table className="min-w-full divide-y divide-zinc-200 text-sm">
-            <thead className="bg-zinc-50">
+            <thead className="bg-sky/10">
               <tr>
                 <Th>Projet</Th>
                 <Th>Client</Th>

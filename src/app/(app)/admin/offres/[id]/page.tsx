@@ -33,6 +33,12 @@ export default async function EditOffrePage({ params }: PageProps<"/admin/offres
         <Field label="Prix (€)">
           <input name="prix" type="number" step="0.01" defaultValue={offre.prix ?? ""} className="input" />
         </Field>
+        <Field label="Type d'interview">
+          <select name="type_interview" defaultValue={offre.type_interview} className="input">
+            <option value="courte">Courte (4 questions)</option>
+            <option value="longue">Longue (8 questions)</option>
+          </select>
+        </Field>
       </AutosaveForm>
     </div>
   );

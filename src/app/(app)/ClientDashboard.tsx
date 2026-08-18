@@ -49,9 +49,15 @@ export async function ClientDashboard({ clientId, nom }: { clientId: string; nom
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-zinc-900">Bonjour {nom}</h1>
+    <div className="relative flex flex-col gap-8">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-sand/20 blur-2xl"
+      />
+      <div className="relative">
+        <h1 className="text-2xl font-semibold text-zinc-900">
+          Bonjour {nom} <span className="ml-1 inline-block h-2 w-2 rounded-full bg-sky align-middle" />
+        </h1>
         <p className="text-sm text-zinc-500">Voici l'avancement de vos projets vidéo</p>
       </div>
 
@@ -64,7 +70,7 @@ export async function ClientDashboard({ clientId, nom }: { clientId: string; nom
             const statut = one(p.statuts);
             const total = stats?.total ?? 0;
             return (
-              <div key={p.id} className="flex flex-col gap-3 rounded-lg border border-zinc-200 bg-white p-5">
+              <div key={p.id} className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5">
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-medium text-zinc-900">{p.nom}</p>
                   {statut && <Badge label={statut.label} color={statut.couleur} />}

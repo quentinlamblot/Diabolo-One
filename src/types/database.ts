@@ -45,11 +45,14 @@ export interface TarifMonteur {
   updated_at: string;
 }
 
+export type TypeInterview = "longue" | "courte";
+
 export interface Offre {
   id: string;
   nom: string;
   description: string | null;
   prix: number | null;
+  type_interview: TypeInterview;
   created_at: string;
 }
 
@@ -124,6 +127,15 @@ export interface IntervieweChamp {
   label: string;
   ordre: number;
   created_at: string;
+}
+
+export interface TrameInterview {
+  id: string;
+  projet_id: string;
+  type_interview: TypeInterview;
+  questions: string[];
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OnboardingReponse {

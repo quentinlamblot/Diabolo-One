@@ -3,11 +3,13 @@ import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import type { Client, Offre, Statut, Projet, Prestataire, OnboardingReponse } from "@/types/database";
+import type { Client, Offre, Statut, Projet, Prestataire, OnboardingReponse, TrameInterview as TrameInterviewData } from "@/types/database";
 import { ProjetForm } from "../ProjetForm";
 import { updateProjet, deleteProjet, assignPrestataire, unassignPrestataire } from "../actions";
 import { DeleteButton } from "./DeleteButton";
 import { AssignPrestataire } from "./AssignPrestataire";
+import { TrameInterview } from "./TrameInterview";
+import { genererTrame, updateTrame } from "./trameActions";
 import { ONBOARDING_SECTIONS } from "../../onboarding/questions";
 
 export default async function ProjetDetailPage({ params }: PageProps<"/projets/[id]">) {
@@ -28,9 +30,17 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
     "use server";
     await assignPrestataire(id, String(formData.get("prestataire_id")), String(formData.get("commentaire") ?? ""));
   };
+  const boundGenererTrame = async () => {
+    "use server";
+    await genererTrame(id);
+  };
+  const boundUpdateTrame = async (formData: FormData) => {
+    "use server";
+    await updateTrame(id, formData);
+  };
 
   if (profile.role === "admin") {
-    const [{ data: clients }, { data: offres }, { data: statuts }, { data: assignations }, { data: allPrestataires }, { data: onboarding }] =
+    const [{ data: clients }, { data: offres }, { data: statuts }, { data: assignations }, { data: allPrestataires }, { data: onboarding }, { data: trame }] =
       await Promise.all([
         supabase.from("clients").select("*").order("nom"),
         supabase.from("offres").select("*").order("nom"),
@@ -38,6 +48,7 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
         supabase.from("projet_prestataires").select("*, prestataires(*)").eq("projet_id", id),
         supabase.from("prestataires").select("*").order("nom"),
         supabase.from("onboarding_reponses").select("*").eq("projet_id", id).maybeSingle(),
+        supabase.from("trames_interview").select("*").eq("projet_id", id).maybeSingle(),
       ]);
 
     const assignedIds = new Set((assignations ?? []).map((a) => a.prestataire_id));
@@ -99,6 +110,13 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           </div>
           <AssignPrestataire available={available} action={boundAssign} />
         </div>
+
+        <TrameInterview
+          typeInterview={(Array.isArray(projet.offres) ? projet.offres[0] : projet.offres)?.type_interview ?? "courte"}
+          trame={trame as TrameInterviewData | null}
+          genererAction={boundGenererTrame}
+          updateAction={boundUpdateTrame}
+        />
 
         {onboarding && <BriefClient reponses={(onboarding as OnboardingReponse).reponses} />}
       </div>

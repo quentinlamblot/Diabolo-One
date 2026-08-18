@@ -3,12 +3,17 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Dashboard } from "./Dashboard";
 import { ClientDashboard } from "./ClientDashboard";
+import { PrestataireDashboard } from "./PrestataireDashboard";
 
 export default async function Home() {
   const profile = await requireProfile();
 
   if (profile.role === "admin") {
     return <Dashboard />;
+  }
+
+  if (profile.role === "prestataire" && profile.prestataire_id) {
+    return <PrestataireDashboard prestataireId={profile.prestataire_id} nom={profile.full_name ?? ""} />;
   }
 
   if (profile.role === "client" && profile.client_id) {
