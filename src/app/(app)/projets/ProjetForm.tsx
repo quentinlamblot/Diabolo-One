@@ -82,49 +82,6 @@ export function ProjetForm({ clients, offres, statuts, projet, action, submitLab
         </Field>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
-        <Field label="Nombre prévu">
-          <input
-            type="number"
-            name="nombre_prevu"
-            defaultValue={projet?.nombre_prevu ?? 0}
-            className="input"
-          />
-        </Field>
-        <Field label="Booké">
-          <input
-            type="number"
-            name="nombre_booke"
-            defaultValue={projet?.nombre_booke ?? 0}
-            className="input"
-          />
-        </Field>
-        <Field label="Tourné">
-          <input
-            type="number"
-            name="nombre_tourne"
-            defaultValue={projet?.nombre_tourne ?? 0}
-            className="input"
-          />
-        </Field>
-        <Field label="À monter">
-          <input
-            type="number"
-            name="nombre_a_monter"
-            defaultValue={projet?.nombre_a_monter ?? 0}
-            className="input"
-          />
-        </Field>
-        <Field label="Terminé">
-          <input
-            type="number"
-            name="nombre_termine"
-            defaultValue={projet?.nombre_termine ?? 0}
-            className="input"
-          />
-        </Field>
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         <Field label="Lien édito">
           <input

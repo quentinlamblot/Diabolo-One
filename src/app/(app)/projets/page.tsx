@@ -8,16 +8,25 @@ export default async function ProjetsPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: projets, error } = await supabase
-    .from("projets")
-    .select("*, clients(*), offres(*), statuts(*)")
-    .order("created_at", { ascending: false });
+  const [{ data: projets, error }, { data: videos }] = await Promise.all([
+    supabase.from("projets").select("*, clients(*), offres(*), statuts(*)").order("created_at", { ascending: false }),
+    supabase.from("videos").select("projet_id, statuts(label)"),
+  ]);
 
   if (error) {
     return <p className="text-sm text-red-600">Erreur de chargement : {error.message}</p>;
   }
 
   const list = (projets ?? []) as Projet[];
+
+  const videoStats = new Map<string, { total: number; livrees: number }>();
+  for (const v of videos ?? []) {
+    const statut = Array.isArray(v.statuts) ? v.statuts[0] : v.statuts;
+    const entry = videoStats.get(v.projet_id) ?? { total: 0, livrees: 0 };
+    entry.total += 1;
+    if (statut?.label === "Livré") entry.livrees += 1;
+    videoStats.set(v.projet_id, entry);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -51,11 +60,7 @@ export default async function ProjetsPage() {
                 <Th>Format</Th>
                 <Th>Statut</Th>
                 <Th>Charte</Th>
-                <Th className="text-right">Prévu</Th>
-                <Th className="text-right">Booké</Th>
-                <Th className="text-right">Tourné</Th>
-                <Th className="text-right">À monter</Th>
-                <Th className="text-right">Terminé</Th>
+                <Th>Vidéos</Th>
                 <Th>Contacts</Th>
               </tr>
             </thead>
@@ -87,25 +92,17 @@ export default async function ProjetsPage() {
                       color={p.charte_graphique === "ok" ? "#22c55e" : "#f59e0b"}
                     />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-zinc-600">
-                    {p.nombre_prevu}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-zinc-600">
-                    {p.nombre_booke}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-zinc-600">
-                    {p.nombre_tourne}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-zinc-600">
-                    {p.nombre_a_monter}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-right text-zinc-600">
-                    {p.nombre_termine}
+                  <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
+                    <Link href={`/projets/${p.id}/videos`} className="hover:underline">
+                      {videoStats.get(p.id)
+                        ? `${videoStats.get(p.id)!.livrees} livrée(s) / ${videoStats.get(p.id)!.total}`
+                        : "—"}
+                    </Link>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <Link
                       href={`/projets/${p.id}/contacts`}
-                      className="text-sm font-medium text-blue-600 hover:underline"
+                      className="text-sm font-medium text-sky-dark hover:underline"
                     >
                       Voir la liste
                     </Link>

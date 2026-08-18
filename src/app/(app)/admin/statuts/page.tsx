@@ -11,6 +11,7 @@ export default async function StatutsAdminPage() {
   const list = (statuts ?? []) as Statut[];
   const projetStatuts = list.filter((s) => s.type === "projet");
   const intervieweStatuts = list.filter((s) => s.type === "interviewe");
+  const videoStatuts = list.filter((s) => s.type === "video");
 
   return (
     <div className="flex flex-col gap-8">
@@ -20,6 +21,7 @@ export default async function StatutsAdminPage() {
         <select name="type" required className="input">
           <option value="projet">Statut projet</option>
           <option value="interviewe">Statut interviewé</option>
+          <option value="video">Statut vidéo</option>
         </select>
         <input name="label" placeholder="Libellé" required className="input" />
         <input name="couleur" type="color" defaultValue="#3b82f6" className="input h-10 p-1" />
@@ -38,6 +40,7 @@ export default async function StatutsAdminPage() {
         La catégorie (vert/orange/rouge) est utilisée pour colorer les lignes du tableau de suivi des contacts.
       </p>
 
+      <StatutGroup title="Statuts vidéo" list={videoStatuts} />
       <StatutGroup title="Statuts projet" list={projetStatuts} />
       <StatutGroup title="Statuts interviewé" list={intervieweStatuts} />
     </div>

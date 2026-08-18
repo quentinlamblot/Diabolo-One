@@ -6,7 +6,6 @@ import { Badge } from "@/components/Badge";
 import type { Client, Offre, Statut, Projet, Prestataire } from "@/types/database";
 import { ProjetForm } from "../ProjetForm";
 import { updateProjet, deleteProjet, assignPrestataire, unassignPrestataire } from "../actions";
-import { PrestaCountsForm } from "./PrestaCountsForm";
 import { DeleteButton } from "./DeleteButton";
 import { AssignPrestataire } from "./AssignPrestataire";
 
@@ -15,11 +14,10 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: projet } = await supabase
-    .from("projets")
-    .select("*, clients(*), offres(*), statuts(*)")
-    .eq("id", id)
-    .single();
+  const [{ data: projet }, { data: videoCounts }] = await Promise.all([
+    supabase.from("projets").select("*, clients(*), offres(*), statuts(*)").eq("id", id).single(),
+    supabase.from("videos").select("statuts(label, couleur)").eq("projet_id", id),
+  ]);
 
   if (!projet) notFound();
 
@@ -53,6 +51,12 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
             <h1 className="mt-1 text-2xl font-semibold text-zinc-900">{projet.nom}</h1>
           </div>
           <div className="flex gap-2">
+            <Link
+              href={`/projets/${id}/videos`}
+              className="rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+            >
+              Vidéos
+            </Link>
             <Link
               href={`/projets/${id}/contacts`}
               className="rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
@@ -103,14 +107,21 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           </Link>
           <h1 className="mt-1 text-2xl font-semibold text-zinc-900">{projet.nom}</h1>
         </div>
-        <ProjetReadonly projet={projet as Projet} />
-        <PrestaCountsForm projet={projet as Projet} action={boundUpdate} />
-        <Link
-          href={`/projets/${id}/contacts`}
-          className="w-fit rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
-        >
-          Suivi des contacts
-        </Link>
+        <ProjetReadonly projet={projet as Projet} videoCounts={videoCounts ?? []} />
+        <div className="flex gap-2">
+          <Link
+            href={`/projets/${id}/videos`}
+            className="w-fit rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+          >
+            Vidéos
+          </Link>
+          <Link
+            href={`/projets/${id}/contacts`}
+            className="w-fit rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+          >
+            Suivi des contacts
+          </Link>
+        </div>
       </div>
     );
   }
@@ -124,18 +135,40 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
         </Link>
         <h1 className="mt-1 text-2xl font-semibold text-zinc-900">{projet.nom}</h1>
       </div>
-      <ProjetReadonly projet={projet as Projet} />
-      <Link
-        href={`/projets/${id}/contacts`}
-        className="w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark"
-      >
-        Suivi des contacts
-      </Link>
+      <ProjetReadonly projet={projet as Projet} videoCounts={videoCounts ?? []} />
+      <div className="flex gap-2">
+        <Link
+          href={`/projets/${id}/videos`}
+          className="w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark"
+        >
+          Vidéos
+        </Link>
+        <Link
+          href={`/projets/${id}/contacts`}
+          className="w-fit rounded-full bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200"
+        >
+          Suivi des contacts
+        </Link>
+      </div>
     </div>
   );
 }
 
-function ProjetReadonly({ projet }: { projet: Projet }) {
+function ProjetReadonly({
+  projet,
+  videoCounts,
+}: {
+  projet: Projet;
+  videoCounts: { statuts: { label: string; couleur: string }[] | { label: string; couleur: string } | null }[];
+}) {
+  const counts = new Map<string, { count: number; couleur: string }>();
+  for (const v of videoCounts) {
+    const statut = Array.isArray(v.statuts) ? v.statuts[0] : v.statuts;
+    if (!statut) continue;
+    const entry = counts.get(statut.label) ?? { count: 0, couleur: statut.couleur };
+    entry.count += 1;
+    counts.set(statut.label, entry);
+  }
   return (
     <div className="grid grid-cols-2 gap-4 rounded-lg border border-zinc-200 bg-white p-5 text-sm">
       <Info label="Offre" value={projet.offres?.nom ?? "—"} />
@@ -154,9 +187,22 @@ function ProjetReadonly({ projet }: { projet: Projet }) {
           />
         }
       />
-      <Info label="Prévu / Booké / Tourné / À monter / Terminé"
-        value={`${projet.nombre_prevu} / ${projet.nombre_booke} / ${projet.nombre_tourne} / ${projet.nombre_a_monter} / ${projet.nombre_termine}`}
-      />
+      <div className="col-span-2">
+        <Info
+          label="Vidéos"
+          value={
+            counts.size === 0 ? (
+              "—"
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from(counts.entries()).map(([label, { count, couleur }]) => (
+                  <Badge key={label} label={`${label} · ${count}`} color={couleur} />
+                ))}
+              </div>
+            )
+          }
+        />
+      </div>
       {projet.lien_edito && (
         <Info label="Lien édito" value={<a className="text-blue-600 hover:underline" href={projet.lien_edito} target="_blank">{projet.lien_edito}</a>} />
       )}

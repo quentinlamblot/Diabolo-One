@@ -1,7 +1,7 @@
 export type UserRole = "admin" | "prestataire" | "client";
 export type FormatType = "16:9" | "9:16" | "16:9 et 9:16";
 export type CharteStatus = "ok" | "en_attente";
-export type StatutType = "projet" | "interviewe";
+export type StatutType = "projet" | "interviewe" | "video";
 export type TypeRemuneration = "monteur" | "graphiste" | "chef_de_projet";
 export type SousTypeMonteur = "video_premium" | "video_classique" | "sur_mesure";
 
@@ -73,11 +73,6 @@ export interface Projet {
   infos_complementaires: string | null;
   statut_id: string | null;
   charte_graphique: CharteStatus;
-  nombre_prevu: number;
-  nombre_booke: number;
-  nombre_tourne: number;
-  nombre_a_monter: number;
-  nombre_termine: number;
   instructions_individuelles: string | null;
   lien_edito: string | null;
   lien_riverside: string | null;
@@ -103,6 +98,24 @@ export interface Interviewe {
   created_at: string;
   updated_at: string;
   statuts?: Statut;
+}
+
+export interface Video {
+  id: string;
+  projet_id: string;
+  titre: string | null;
+  statut_id: string | null;
+  prestataire_id: string | null;
+  interviewe_id: string | null;
+  date_tournage: string | null;
+  date_livraison: string | null;
+  notes: string | null;
+  ordre: number;
+  created_at: string;
+  updated_at: string;
+  statuts?: Statut;
+  prestataires?: Prestataire;
+  interviewes?: Interviewe;
 }
 
 export interface IntervieweChamp {
