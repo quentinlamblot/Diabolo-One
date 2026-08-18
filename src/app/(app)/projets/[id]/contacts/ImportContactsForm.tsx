@@ -57,6 +57,7 @@ export function ImportContactsForm({
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping[]>([]);
+  const [headerRowIndex, setHeaderRowIndex] = useState(0);
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -66,14 +67,42 @@ export function ImportContactsForm({
     setFile(f);
     setResult(null);
     setError(null);
-    const buffer = await f.arrayBuffer();
-    const workbook = XLSX.read(buffer, { type: "array" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
-    const headerRow = (rows[0] ?? [])
-      .map((h) => String(h ?? "").trim())
-      .filter((h) => h.length > 0);
-    setMapping(headerRow.map((h) => ({ header: h, target: guessTarget(h, champs), customLabel: h })));
+    setMapping([]);
+
+    try {
+      const buffer = await f.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet) {
+        setError("Ce fichier ne contient aucune feuille lisible.");
+        return;
+      }
+      const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false });
+
+      // La ligne d'en-têtes n'est pas toujours la première (ligne de titre, ligne vide...) :
+      // on prend la première ligne du fichier qui contient au moins une cellule non vide.
+      const headerRowIndex = rows.findIndex(
+        (row) => Array.isArray(row) && row.some((cell) => String(cell ?? "").trim().length > 0)
+      );
+
+      if (headerRowIndex === -1) {
+        setError("Aucune colonne détectée dans ce fichier. Vérifiez qu'il contient bien des données.");
+        return;
+      }
+
+      const headerRow = rows[headerRowIndex]
+        .map((h) => String(h ?? "").trim())
+        .filter((h) => h.length > 0);
+
+      setHeaderRowIndex(headerRowIndex);
+      setMapping(headerRow.map((h) => ({ header: h, target: guessTarget(h, champs), customLabel: h })));
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Impossible de lire ce fichier : ${err.message}`
+          : "Impossible de lire ce fichier."
+      );
+    }
   }
 
   async function handleSubmit() {
@@ -84,6 +113,7 @@ export function ImportContactsForm({
       const fd = new FormData();
       fd.set("file", file);
       fd.set("mapping", JSON.stringify(mapping));
+      fd.set("headerRowIndex", String(headerRowIndex));
       const res = await action(fd);
       setResult(res);
       setFile(null);

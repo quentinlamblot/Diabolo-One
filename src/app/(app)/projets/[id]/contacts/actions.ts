@@ -125,12 +125,15 @@ export async function importInterviewes(
   const mappingRaw = str(formData, "mapping");
   if (!mappingRaw) throw new Error("Correspondance des colonnes manquante.");
   const mapping = JSON.parse(mappingRaw) as ColumnMapping[];
+  const headerRowIndex = Number(formData.get("headerRowIndex") ?? 0);
 
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
-  const dataRows = rows.slice(1); // la première ligne (en-têtes) a déjà servi au mapping côté client
+  if (!sheet) throw new Error("Ce fichier ne contient aucune feuille lisible.");
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false });
+  // Les lignes avant et sur la ligne d'en-têtes (détectée côté client) sont ignorées.
+  const dataRows = rows.slice(headerRowIndex + 1);
 
   const supabase = await createClient();
 
