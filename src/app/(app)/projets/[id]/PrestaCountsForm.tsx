@@ -1,16 +1,17 @@
 "use client";
 
 import type { Projet } from "@/types/database";
+import { AutosaveForm } from "@/components/AutosaveForm";
 
 export function PrestaCountsForm({
   projet,
   action,
 }: {
   projet: Projet;
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => void | Promise<void>;
 }) {
   return (
-    <form action={action} className="grid grid-cols-4 gap-4 rounded-lg border border-zinc-200 bg-white p-5">
+    <AutosaveForm action={action} className="grid grid-cols-4 gap-4 rounded-lg border border-zinc-200 bg-white p-5">
       <Field label="Booké">
         <input type="number" name="nombre_booke" defaultValue={projet.nombre_booke} className="input" />
       </Field>
@@ -23,13 +24,7 @@ export function PrestaCountsForm({
       <Field label="Terminé">
         <input type="number" name="nombre_termine" defaultValue={projet.nombre_termine} className="input" />
       </Field>
-      <button
-        type="submit"
-        className="col-span-4 w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-      >
-        Mettre à jour
-      </button>
-    </form>
+    </AutosaveForm>
   );
 }
 

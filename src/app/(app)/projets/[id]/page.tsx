@@ -27,7 +27,7 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
   const boundDelete = deleteProjet.bind(null, id);
   const boundAssign = async (formData: FormData) => {
     "use server";
-    await assignPrestataire(id, String(formData.get("prestataire_id")));
+    await assignPrestataire(id, String(formData.get("prestataire_id")), String(formData.get("commentaire") ?? ""));
   };
 
   if (profile.role === "admin") {
@@ -69,7 +69,7 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           statuts={(statuts ?? []) as Statut[]}
           projet={projet as Projet}
           action={boundUpdate}
-          submitLabel="Enregistrer"
+          autosave
         />
 
         <div className="rounded-lg border border-zinc-200 bg-white p-5">

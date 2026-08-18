@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Interviewe, IntervieweChamp, Statut } from "@/types/database";
 import { StatutSelect } from "./StatutSelect";
 
@@ -9,6 +9,9 @@ const rowColor: Record<string, string> = {
   orange: "bg-orange-50 hover:bg-orange-100",
   rouge: "bg-red-50 hover:bg-red-100",
 };
+
+const inlineInputClass =
+  "w-full min-w-0 rounded border border-transparent bg-transparent px-1.5 py-1 text-sm hover:border-zinc-200 focus:border-zinc-400 focus:bg-white focus:outline-none";
 
 export function IntervieweRow({
   interviewe,
@@ -27,65 +30,100 @@ export function IntervieweRow({
   canEditInfo: boolean;
   canEditStatut: boolean;
   canDelete: boolean;
-  updateAction: (formData: FormData) => void;
+  updateAction: (formData: FormData) => void | Promise<void>;
   statutAction: (statutId: string) => Promise<void>;
   deleteAction: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const bg = rowColor[interviewe.statuts?.categorie ?? ""] ?? "hover:bg-zinc-50";
 
-  if (editing) {
-    return (
-      <tr className="bg-zinc-50">
-        <td colSpan={7 + champs.length} className="p-3">
-          <form
-            action={(fd) => {
-              updateAction(fd);
-              setEditing(false);
-            }}
-            className="grid grid-cols-4 gap-2"
-          >
-            <input name="prenom" defaultValue={interviewe.prenom ?? ""} placeholder="Prénom" className="input" />
-            <input name="nom" defaultValue={interviewe.nom} placeholder="Nom" required className="input" />
-            <input name="email" type="email" defaultValue={interviewe.email ?? ""} placeholder="Email" className="input" />
-            <input name="telephone" defaultValue={interviewe.telephone ?? ""} placeholder="Téléphone" className="input" />
-            <input name="date_rdv" type="date" defaultValue={interviewe.date_rdv ?? ""} className="input" />
-            <input name="notes" defaultValue={interviewe.notes ?? ""} placeholder="Notes" className="input col-span-2" />
-            {champs.map((c) => (
-              <input
-                key={c.id}
-                name={`champ_${c.id}`}
-                defaultValue={interviewe.custom_fields?.[c.id] ?? ""}
-                placeholder={c.label}
-                className="input"
-              />
-            ))}
-            <div className="col-span-4 flex gap-2">
-              <button type="submit" className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-800">
-                Enregistrer
-              </button>
-              <button
-                type="button"
-                onClick={() => setEditing(false)}
-                className="text-xs font-medium text-zinc-500 hover:underline"
-              >
-                Annuler
-              </button>
-            </div>
-          </form>
-        </td>
-      </tr>
-    );
+  function handleAutosave() {
+    const el = rowRef.current;
+    if (!el) return;
+    const fd = new FormData();
+    el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-autosave-field]").forEach((input) => {
+      fd.set(input.name, input.value);
+    });
+    setSaving(true);
+    setSaved(false);
+    Promise.resolve(updateAction(fd)).finally(() => {
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    });
   }
 
   return (
-    <tr className={bg}>
-      <td className="whitespace-nowrap px-4 py-3 text-zinc-800">{interviewe.prenom ?? "—"}</td>
-      <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-900">{interviewe.nom}</td>
-      <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{interviewe.email ?? "—"}</td>
-      <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{interviewe.telephone ?? "—"}</td>
-      <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
-        {interviewe.date_rdv ? new Date(interviewe.date_rdv).toLocaleDateString("fr-FR") : "—"}
+    <tr ref={rowRef} className={bg} onBlur={canEditInfo ? handleAutosave : undefined}>
+      <td className="px-2 py-1.5">
+        {canEditInfo ? (
+          <input
+            name="prenom"
+            data-autosave-field
+            defaultValue={interviewe.prenom ?? ""}
+            placeholder="Prénom"
+            className={inlineInputClass}
+          />
+        ) : (
+          <span className="px-1.5 text-zinc-800">{interviewe.prenom ?? "—"}</span>
+        )}
+      </td>
+      <td className="px-2 py-1.5">
+        {canEditInfo ? (
+          <input
+            name="nom"
+            data-autosave-field
+            defaultValue={interviewe.nom ?? ""}
+            placeholder="Nom"
+            className={inlineInputClass + " font-medium"}
+          />
+        ) : (
+          <span className="px-1.5 font-medium text-zinc-900">{interviewe.nom ?? "—"}</span>
+        )}
+      </td>
+      <td className="px-2 py-1.5">
+        {canEditInfo ? (
+          <input
+            name="email"
+            type="email"
+            data-autosave-field
+            defaultValue={interviewe.email ?? ""}
+            placeholder="Email"
+            className={inlineInputClass}
+          />
+        ) : (
+          <span className="px-1.5 text-zinc-600">{interviewe.email ?? "—"}</span>
+        )}
+      </td>
+      <td className="px-2 py-1.5">
+        {canEditInfo ? (
+          <input
+            name="telephone"
+            data-autosave-field
+            defaultValue={interviewe.telephone ?? ""}
+            placeholder="Téléphone"
+            className={inlineInputClass}
+          />
+        ) : (
+          <span className="px-1.5 text-zinc-600">{interviewe.telephone ?? "—"}</span>
+        )}
+      </td>
+      <td className="px-2 py-1.5">
+        {canEditInfo ? (
+          <input
+            name="date_rdv"
+            type="date"
+            data-autosave-field
+            defaultValue={interviewe.date_rdv ?? ""}
+            className={inlineInputClass}
+          />
+        ) : (
+          <span className="px-1.5 text-zinc-600">
+            {interviewe.date_rdv ? new Date(interviewe.date_rdv).toLocaleDateString("fr-FR") : "—"}
+          </span>
+        )}
       </td>
       <td className="whitespace-nowrap px-4 py-3">
         {canEditStatut ? (
@@ -101,23 +139,43 @@ export function IntervieweRow({
           "—"
         )}
       </td>
-      <td className="max-w-xs truncate px-4 py-3 text-zinc-600">{interviewe.notes ?? "—"}</td>
-      {champs.map((c) => (
-        <td key={c.id} className="whitespace-nowrap px-4 py-3 text-zinc-600">
-          {interviewe.custom_fields?.[c.id] || "—"}
-        </td>
-      ))}
+      <td className="px-2 py-1.5">
+        {canEditInfo ? (
+          <input
+            name="notes"
+            data-autosave-field
+            defaultValue={interviewe.notes ?? ""}
+            placeholder="Notes"
+            className={inlineInputClass}
+          />
+        ) : (
+          <span className="px-1.5 text-zinc-600">{interviewe.notes ?? "—"}</span>
+        )}
+      </td>
+      {champs.map((c) =>
+        canEditInfo ? (
+          <td key={c.id} className="px-2 py-1.5">
+            <input
+              name={`champ_${c.id}`}
+              data-autosave-field
+              defaultValue={interviewe.custom_fields?.[c.id] ?? ""}
+              placeholder={c.label}
+              className={inlineInputClass}
+            />
+          </td>
+        ) : (
+          <td key={c.id} className="whitespace-nowrap px-4 py-3 text-zinc-600">
+            {interviewe.custom_fields?.[c.id] || "—"}
+          </td>
+        )
+      )}
       {(canEditInfo || canDelete) && (
         <td className="whitespace-nowrap px-4 py-3">
-          <div className="flex justify-end gap-3">
+          <div className="flex items-center justify-end gap-3">
             {canEditInfo && (
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                className="text-xs font-medium text-blue-600 hover:underline"
-              >
-                Modifier
-              </button>
+              <span className="text-xs text-zinc-400">
+                {saving ? "Enregistrement…" : saved ? "Enregistré ✓" : ""}
+              </span>
             )}
             {canDelete && (
               <form action={deleteAction}>

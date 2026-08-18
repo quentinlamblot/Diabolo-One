@@ -75,7 +75,7 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
       {canAdd && (
         <div className="flex flex-col gap-4">
           <AddIntervieweForm statuts={statutList} action={boundCreate} />
-          <ImportContactsForm action={boundImport} />
+          <ImportContactsForm champs={champList} action={boundImport} />
         </div>
       )}
 

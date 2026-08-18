@@ -106,12 +106,10 @@ export async function deleteIntervieweChamp(champId: string) {
   revalidatePath("/", "layout");
 }
 
-function normalizeHeader(h: string): string {
-  return h
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .trim()
-    .toLowerCase();
+interface ColumnMapping {
+  header: string;
+  target: string; // "ignore" | "prenom" | "nom" | "email" | "telephone" | "date_rdv" | "statut" | "new" | `existing:${id}`
+  customLabel: string;
 }
 
 export async function importInterviewes(
@@ -124,10 +122,15 @@ export async function importInterviewes(
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) throw new Error("Fichier manquant.");
 
+  const mappingRaw = str(formData, "mapping");
+  if (!mappingRaw) throw new Error("Correspondance des colonnes manquante.");
+  const mapping = JSON.parse(mappingRaw) as ColumnMapping[];
+
   const buffer = await file.arrayBuffer();
   const workbook = XLSX.read(buffer, { type: "array" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" });
+  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 });
+  const dataRows = rows.slice(1); // la première ligne (en-têtes) a déjà servi au mapping côté client
 
   const supabase = await createClient();
 
@@ -139,32 +142,75 @@ export async function importInterviewes(
   const { data: statuts } = await supabase.from("statuts").select("*").eq("type", "interviewe");
   const statutByLabel = new Map((statuts ?? []).map((s) => [s.label.trim().toLowerCase(), s.id]));
 
+  // Crée les nouvelles colonnes personnalisées demandées et résout chaque
+  // colonne "new"/"existing:<id>" vers un id de champ définitif.
+  const { data: existingOrdreRows } = await supabase
+    .from("interviewe_champs")
+    .select("ordre")
+    .order("ordre", { ascending: false })
+    .limit(1);
+  let nextOrdre = (existingOrdreRows?.[0]?.ordre ?? -1) + 1;
+
+  const champIdByColumnIndex = new Map<number, string>();
+  for (let i = 0; i < mapping.length; i++) {
+    const col = mapping[i];
+    if (col.target === "new") {
+      const label = col.customLabel.trim() || col.header;
+      const { data: created, error } = await supabase
+        .from("interviewe_champs")
+        .insert({ label, ordre: nextOrdre++ })
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      champIdByColumnIndex.set(i, created.id);
+    } else if (col.target.startsWith("existing:")) {
+      champIdByColumnIndex.set(i, col.target.slice("existing:".length));
+    }
+  }
+
   const toInsert: Record<string, unknown>[] = [];
   let skipped = 0;
 
-  for (const row of rows) {
-    const normalized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(row)) {
-      normalized[normalizeHeader(key)] = value;
+  for (const row of dataRows) {
+    const customFields: Record<string, string> = {};
+    let nom: string | null = null;
+    let prenom: string | null = null;
+    let email: string | null = null;
+    let telephone: string | null = null;
+    let dateRdv: string | null = null;
+    let statutId: string | null = null;
+    let hasAnyValue = false;
+
+    for (let i = 0; i < mapping.length; i++) {
+      const col = mapping[i];
+      const raw = row[i];
+      const value = raw === undefined || raw === null ? "" : String(raw).trim();
+      if (!value) continue;
+      hasAnyValue = true;
+
+      if (col.target === "prenom") prenom = value;
+      else if (col.target === "nom") nom = value;
+      else if (col.target === "email") email = value;
+      else if (col.target === "telephone") telephone = value;
+      else if (col.target === "date_rdv") dateRdv = value;
+      else if (col.target === "statut") statutId = statutByLabel.get(value.toLowerCase()) ?? null;
+      else if (champIdByColumnIndex.has(i)) customFields[champIdByColumnIndex.get(i)!] = value;
     }
 
-    const nom = String(normalized["nom"] ?? "").trim();
-    if (!nom) {
+    if (!hasAnyValue) {
       skipped++;
       continue;
     }
 
-    const statutLabel = String(normalized["statut"] ?? "").trim().toLowerCase();
-    const dateRdvRaw = String(normalized["date du rdv"] ?? normalized["date rdv"] ?? normalized["daterdv"] ?? "").trim();
-
     toInsert.push({
       projet_id: projetId,
       nom,
-      prenom: String(normalized["prenom"] ?? "").trim() || null,
-      email: String(normalized["email"] ?? "").trim() || null,
-      telephone: String(normalized["telephone"] ?? normalized["tel"] ?? "").trim() || null,
-      statut_id: statutLabel ? (statutByLabel.get(statutLabel) ?? null) : null,
-      date_rdv: dateRdvRaw || null,
+      prenom,
+      email,
+      telephone,
+      date_rdv: dateRdv,
+      statut_id: statutId,
+      custom_fields: customFields,
     });
   }
 
@@ -174,6 +220,7 @@ export async function importInterviewes(
   }
 
   revalidatePath(`/projets/${projetId}/contacts`);
+  revalidatePath("/", "layout");
   return { imported: toInsert.length, skipped };
 }
 

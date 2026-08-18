@@ -92,7 +92,7 @@ export interface Projet {
 export interface Interviewe {
   id: string;
   projet_id: string;
-  nom: string;
+  nom: string | null;
   prenom: string | null;
   email: string | null;
   telephone: string | null;
@@ -110,6 +110,18 @@ export interface IntervieweChamp {
   label: string;
   ordre: number;
   created_at: string;
+}
+
+export interface Commentaire {
+  id: string;
+  projet_id: string;
+  prestataire_id: string | null;
+  auteur_id: string;
+  contenu: string;
+  created_at: string;
+  profiles?: Profile;
+  prestataires?: Prestataire;
+  projets?: Projet;
 }
 
 export interface TachePrestataire {

@@ -1,19 +1,21 @@
 "use client";
 
 import type { Client, Offre, Statut, Projet } from "@/types/database";
+import { AutosaveForm } from "@/components/AutosaveForm";
 
 interface Props {
   clients: Client[];
   offres: Offre[];
   statuts: Statut[];
   projet?: Projet;
-  action: (formData: FormData) => void;
-  submitLabel: string;
+  action: (formData: FormData) => void | Promise<void>;
+  submitLabel?: string;
+  autosave?: boolean;
 }
 
-export function ProjetForm({ clients, offres, statuts, projet, action, submitLabel }: Props) {
-  return (
-    <form action={action} className="flex flex-col gap-6">
+export function ProjetForm({ clients, offres, statuts, projet, action, submitLabel, autosave }: Props) {
+  const fields = (
+    <>
       <div className="grid grid-cols-2 gap-4">
         <Field label="Nom du projet">
           <input
@@ -161,7 +163,20 @@ export function ProjetForm({ clients, offres, statuts, projet, action, submitLab
           className="input"
         />
       </Field>
+    </>
+  );
 
+  if (autosave) {
+    return (
+      <AutosaveForm action={action} className="flex flex-col gap-6">
+        {fields}
+      </AutosaveForm>
+    );
+  }
+
+  return (
+    <form action={action} className="flex flex-col gap-6">
+      {fields}
       <button
         type="submit"
         className="w-fit rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"

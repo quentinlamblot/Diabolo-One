@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendEmail } from "@/lib/email";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -105,7 +106,7 @@ export async function deleteProjet(projetId: string) {
   redirect("/projets");
 }
 
-export async function assignPrestataire(projetId: string, prestataireId: string) {
+export async function assignPrestataire(projetId: string, prestataireId: string, commentaire: string | null) {
   const profile = await requireProfile();
   if (profile.role !== "admin") throw new Error("Non autorisé");
 
@@ -115,7 +116,38 @@ export async function assignPrestataire(projetId: string, prestataireId: string)
     .insert({ projet_id: projetId, prestataire_id: prestataireId });
   if (error) throw new Error(error.message);
 
+  const [{ data: projet }, { data: prestataire }] = await Promise.all([
+    supabase.from("projets").select("nom").eq("id", projetId).single(),
+    supabase.from("prestataires").select("nom, email").eq("id", prestataireId).single(),
+  ]);
+
+  const texteCommentaire = commentaire?.trim() || null;
+
+  if (texteCommentaire) {
+    const { error: commentError } = await supabase.from("commentaires").insert({
+      projet_id: projetId,
+      prestataire_id: prestataireId,
+      auteur_id: profile.id,
+      contenu: texteCommentaire,
+    });
+    if (commentError) throw new Error(commentError.message);
+  }
+
+  if (prestataire?.email) {
+    await sendEmail({
+      to: prestataire.email,
+      subject: `Nouvelle affectation : ${projet?.nom ?? "un projet"}`,
+      html: `
+        <p>Bonjour ${prestataire.nom},</p>
+        <p>Vous avez été affecté(e) au projet <strong>${projet?.nom ?? ""}</strong>.</p>
+        ${texteCommentaire ? `<p><strong>Message :</strong><br/>${texteCommentaire.replace(/\n/g, "<br/>")}</p>` : ""}
+        <p>Connectez-vous à Gestion Projet pour voir le détail.</p>
+      `,
+    });
+  }
+
   revalidatePath(`/projets/${projetId}`);
+  revalidatePath("/messagerie");
 }
 
 export async function unassignPrestataire(projetId: string, prestataireId: string) {

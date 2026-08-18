@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Badge } from "@/components/Badge";
 import type { Statut } from "@/types/database";
+import { AutosaveForm } from "@/components/AutosaveForm";
 
 export function StatutItem({
   statut,
@@ -10,7 +11,7 @@ export function StatutItem({
   deleteAction,
 }: {
   statut: Statut;
-  updateAction: (formData: FormData) => void;
+  updateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -39,11 +40,8 @@ export function StatutItem({
   }
 
   return (
-    <form
-      action={(fd) => {
-        updateAction(fd);
-        setEditing(false);
-      }}
+    <AutosaveForm
+      action={updateAction}
       className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-2"
     >
       <input name="label" defaultValue={statut.label} required className="input w-32" />
@@ -55,16 +53,13 @@ export function StatutItem({
         <option value="rouge">🔴 Rouge</option>
       </select>
       <input name="ordre" type="number" defaultValue={statut.ordre} className="input w-16" />
-      <button type="submit" className="rounded-md bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800">
-        Enregistrer
-      </button>
       <button
         type="button"
         onClick={() => setEditing(false)}
         className="text-xs font-medium text-zinc-500 hover:underline"
       >
-        Annuler
+        Fermer
       </button>
-    </form>
+    </AutosaveForm>
   );
 }

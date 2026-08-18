@@ -3,7 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 function str(formData: FormData, key: string): string | null {
   const v = formData.get(key);
@@ -38,7 +37,6 @@ export async function updatePrestataireEntry(prestataireId: string, formData: Fo
     .eq("id", prestataireId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/prestataires");
-  redirect("/admin/prestataires");
 }
 
 export async function deletePrestataireEntry(prestataireId: string) {

@@ -32,6 +32,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             Projets
           </Link>
 
+          {(profile.role === "admin" || profile.role === "prestataire") && (
+            <Link href="/messagerie" className={navLinkClass}>
+              Messagerie
+            </Link>
+          )}
+
           {profile.role === "admin" && (
             <>
               <details className="group" open>

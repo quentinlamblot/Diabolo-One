@@ -4,7 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import type { UserRole } from "@/types/database";
 
 export async function createUserEntry(formData: FormData) {
@@ -65,7 +64,6 @@ export async function updateUserEntry(userId: string, formData: FormData) {
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/utilisateurs");
-  redirect("/admin/utilisateurs");
 }
 
 export async function deleteUserEntry(userId: string) {

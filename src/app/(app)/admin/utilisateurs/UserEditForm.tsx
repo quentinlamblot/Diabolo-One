@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Client, Prestataire, Profile } from "@/types/database";
+import { AutosaveForm } from "@/components/AutosaveForm";
 
 export function UserEditForm({
   profile,
@@ -12,12 +13,12 @@ export function UserEditForm({
   profile: Profile;
   clients: Client[];
   prestataires: Prestataire[];
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => void | Promise<void>;
 }) {
   const [role, setRole] = useState<"admin" | "prestataire" | "client">(profile.role);
 
   return (
-    <form action={action} className="flex max-w-lg flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-5">
+    <AutosaveForm action={action} className="flex max-w-lg flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-5">
       <Field label="Nom complet">
         <input name="full_name" defaultValue={profile.full_name ?? ""} className="input" />
       </Field>
@@ -60,13 +61,7 @@ export function UserEditForm({
           </select>
         </Field>
       )}
-      <button
-        type="submit"
-        className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
-      >
-        Enregistrer
-      </button>
-    </form>
+    </AutosaveForm>
   );
 }
 
