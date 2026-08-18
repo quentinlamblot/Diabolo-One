@@ -18,7 +18,7 @@ export default async function OffresAdminPage() {
         <input name="nom" placeholder="Nom de l'offre" required className="input" />
         <input name="description" placeholder="Description" className="input" />
         <input name="prix" type="number" step="0.01" placeholder="Prix (€)" className="input" />
-        <button type="submit" className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">
+        <button type="submit" className="rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark">
           Ajouter
         </button>
       </form>

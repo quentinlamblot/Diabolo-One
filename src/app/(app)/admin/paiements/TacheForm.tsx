@@ -156,7 +156,7 @@ export function TacheForm({
       {type !== "" && (
         <button
           type="submit"
-          className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+          className="w-fit rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark"
         >
           Ajouter
         </button>

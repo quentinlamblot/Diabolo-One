@@ -179,7 +179,7 @@ export function ProjetForm({ clients, offres, statuts, projet, action, submitLab
       {fields}
       <button
         type="submit"
-        className="w-fit rounded-md bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
+        className="w-fit rounded-full bg-navy px-5 py-2.5 text-sm font-medium text-white hover:bg-sky-dark"
       >
         {submitLabel}
       </button>

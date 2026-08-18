@@ -18,7 +18,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+          className="input"
         />
       </div>
       <div className="flex flex-col gap-1">
@@ -31,14 +31,14 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+          className="input"
         />
       </div>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
         disabled={pending}
-        className="mt-2 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+        className="mt-2 rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark disabled:opacity-50"
       >
         {pending ? "Connexion..." : "Se connecter"}
       </button>

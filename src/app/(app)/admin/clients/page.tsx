@@ -19,7 +19,7 @@ export default async function ClientsAdminPage() {
         <input name="email" type="email" placeholder="Email" className="input" />
         <input name="telephone" placeholder="Téléphone" className="input" />
         <input name="notes" placeholder="Notes" className="input" />
-        <button type="submit" className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">
+        <button type="submit" className="rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark">
           Ajouter
         </button>
       </form>

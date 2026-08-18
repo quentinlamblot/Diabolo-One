@@ -51,7 +51,7 @@ export function UserForm({
       )}
       <button
         type="submit"
-        className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800"
+        className="rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark"
       >
         Créer le compte
       </button>

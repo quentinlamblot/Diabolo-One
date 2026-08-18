@@ -30,7 +30,7 @@ export default async function StatutsAdminPage() {
           <option value="rouge">🔴 Rouge</option>
         </select>
         <input name="ordre" type="number" placeholder="Ordre" defaultValue={0} className="input" />
-        <button type="submit" className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800">
+        <button type="submit" className="rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark">
           Ajouter
         </button>
       </form>

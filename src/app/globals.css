@@ -1,32 +1,59 @@
 @import "tailwindcss";
+@import "@fontsource/cal-sans";
+@import "@fontsource/epilogue/300.css";
+@import "@fontsource/epilogue/400.css";
+@import "@fontsource/epilogue/500.css";
+@import "@fontsource/epilogue/600.css";
+@import "@fontsource/epilogue/700.css";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffcfa;
+  --foreground: #10263d;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: "Epilogue", sans-serif;
+  --font-heading: "Cal Sans", "Epilogue", sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Diabolo Agency brand palette */
+  --color-navy: #10263d;
+  --color-navy-light: #1c3854;
+  --color-cream: #fffcfa;
+  --color-sky: #8cc5f4;
+  --color-sky-dark: #56a5d1;
+  --color-sand: #f9c8a7;
+  --color-sand-dark: #e2a881;
+
+  /* Neutral scale re-tinted toward navy so every zinc-* utility follows the brand */
+  --color-zinc-50: #f6f8fa;
+  --color-zinc-100: #eef2f6;
+  --color-zinc-200: #dde4ec;
+  --color-zinc-300: #c3ced9;
+  --color-zinc-400: #98a7b8;
+  --color-zinc-500: #71839a;
+  --color-zinc-600: #536479;
+  --color-zinc-700: #3d4d61;
+  --color-zinc-800: #263548;
+  --color-zinc-900: #10263d;
+  --color-zinc-950: #0b1c2e;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
 }
 
 @layer components {
   .input {
-    @apply rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none;
+    @apply rounded-xl border border-zinc-300 px-3 py-2 text-sm focus:border-sky-dark focus:outline-none;
   }
 }

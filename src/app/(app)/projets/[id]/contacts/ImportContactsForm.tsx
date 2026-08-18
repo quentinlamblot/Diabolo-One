@@ -189,7 +189,7 @@ export function ImportContactsForm({
             type="button"
             onClick={handleSubmit}
             disabled={pending}
-            className="w-fit rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+            className="w-fit rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark disabled:opacity-50"
           >
             {pending ? "Import..." : "Importer"}
           </button>

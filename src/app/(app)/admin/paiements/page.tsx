@@ -114,7 +114,7 @@ export default async function PaiementsAdminPage({
               className="input"
             />
           </label>
-          <button type="submit" className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800">
+          <button type="submit" className="rounded-full bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-sky-dark">
             Enregistrer les tarifs
           </button>
         </form>
