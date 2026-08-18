@@ -49,16 +49,24 @@ Réponds UNIQUEMENT avec un tableau JSON de ${nombreQuestions} chaînes de carac
   }
 
   const data = await res.json();
-  const texte: string = data.content?.[0]?.text ?? "";
+  // La réponse peut contenir un bloc "thinking" avant le bloc "text" : on
+  // cible explicitement le premier bloc de type texte plutôt que content[0].
+  interface ContentBlock {
+    type: string;
+    text?: string;
+  }
+  const blocTexte = (data.content as ContentBlock[] | undefined)?.find((b) => b.type === "text");
+  const texte = (blocTexte?.text ?? "").trim();
+  const texteJson = texte.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/, "");
 
   try {
-    const parsed = JSON.parse(texte);
+    const parsed = JSON.parse(texteJson);
     if (Array.isArray(parsed)) return parsed.map(String);
   } catch {
     // Le modèle n'a pas renvoyé un JSON strict : repli en découpant ligne par ligne.
   }
 
-  return texte
+  return texteJson
     .split("\n")
     .map((l) => l.replace(/^[\d.\-•\s]+/, "").trim())
     .filter(Boolean)
