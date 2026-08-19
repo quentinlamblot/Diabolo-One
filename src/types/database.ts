@@ -14,7 +14,9 @@ export interface Statut {
   couleur: string;
   categorie: Categorie | null;
   ordre: number;
+  statut_interviewe_lie_id: string | null;
   created_at: string;
+  statut_interviewe_lie?: Statut;
 }
 
 export interface Client {
@@ -77,8 +79,6 @@ export interface Projet {
   statut_id: string | null;
   charte_graphique: CharteStatus;
   nombre_commande: number;
-  prestataire_tournage_defaut_id: string | null;
-  prestataire_montage_defaut_id: string | null;
   instructions_individuelles: string | null;
   lien_edito: string | null;
   lien_riverside: string | null;
@@ -111,8 +111,6 @@ export interface Video {
   projet_id: string;
   titre: string | null;
   statut_id: string | null;
-  prestataire_tournage_id: string | null;
-  prestataire_montage_id: string | null;
   interviewe_id: string | null;
   date_tournage: string | null;
   date_livraison: string | null;
@@ -121,9 +119,16 @@ export interface Video {
   created_at: string;
   updated_at: string;
   statuts?: Statut;
-  prestataire_tournage?: Prestataire;
-  prestataire_montage?: Prestataire;
   interviewes?: Interviewe;
+}
+
+export interface ProjetVideoResponsable {
+  id: string;
+  projet_id: string;
+  statut_id: string;
+  prestataire_id: string;
+  created_at: string;
+  prestataires?: Prestataire;
 }
 
 export interface IntervieweChamp {

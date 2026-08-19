@@ -1,13 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import type { Statut } from "@/types/database";
-import { createStatutEntry, updateStatutEntry, deleteStatutEntry } from "./actions";
+import { createStatutEntry, updateStatutEntry, deleteStatutEntry, resynchroniserContactsVideo } from "./actions";
 import { StatutItem } from "./StatutItem";
+import { ResyncButton } from "./ResyncButton";
 
 export default async function StatutsAdminPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const { data: statuts } = await supabase.from("statuts").select("*").order("type").order("ordre");
+  const { data: statuts } = await supabase.from("statuts").select("*, statut_interviewe_lie:statut_interviewe_lie_id(*)").order("type").order("ordre");
   const list = (statuts ?? []) as Statut[];
   const projetStatuts = list.filter((s) => s.type === "projet");
   const intervieweStatuts = list.filter((s) => s.type === "interviewe");
@@ -40,7 +41,35 @@ export default async function StatutsAdminPage() {
         La catégorie (vert/orange/rouge) est utilisée pour colorer les lignes du tableau de suivi des contacts.
       </p>
 
-      <StatutGroup title="Statuts vidéo" list={videoStatuts} />
+      <div className="rounded-lg border border-zinc-200 bg-white p-5">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-900">Statuts vidéo</h2>
+          <ResyncButton action={resynchroniserContactsVideo} />
+        </div>
+        <p className="-mt-1 mb-3 text-xs text-zinc-500">
+          Le champ « → contact » définit le statut appliqué automatiquement au contact lié quand une vidéo atteint
+          cette étape (ex. « Booké » peut déclencher « Booké » ou « Tourné » côté contact, selon ce que représente
+          la colonne). « Resynchroniser » réapplique cette correspondance à toutes les vidéos existantes, y compris
+          celles qui n&apos;ont jamais déclenché de synchro.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {videoStatuts.length === 0 && <p className="text-sm text-zinc-500">Aucun statut.</p>}
+          {videoStatuts.map((s) => {
+            const boundUpdate = async (formData: FormData) => {
+              "use server";
+              await updateStatutEntry(s.id, formData);
+            };
+            const boundDelete = async () => {
+              "use server";
+              await deleteStatutEntry(s.id);
+            };
+            return (
+              <StatutItem key={s.id} statut={s} intervieweStatuts={intervieweStatuts} updateAction={boundUpdate} deleteAction={boundDelete} />
+            );
+          })}
+        </div>
+      </div>
+
       <StatutGroup title="Statuts projet" list={projetStatuts} />
       <StatutGroup title="Statuts interviewé" list={intervieweStatuts} />
     </div>

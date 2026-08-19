@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Video, Statut, Prestataire, Interviewe, UserRole } from "@/types/database";
+import type { Video, Statut, Prestataire, Interviewe, ProjetVideoResponsable, UserRole } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
 
 function contactLabel(i: Pick<Interviewe, "nom" | "prenom">) {
@@ -13,12 +13,14 @@ interface Props {
   videos: Video[];
   prestataires: Prestataire[];
   interviewes: Interviewe[];
+  responsables: ProjetVideoResponsable[];
   role: UserRole;
   currentPrestataireId: string | null;
   createAction: (formData: FormData) => Promise<void>;
   updateAction: (videoId: string, formData: FormData) => Promise<void>;
   updateStatutAction: (videoId: string, statutId: string) => Promise<void>;
   deleteAction: (videoId: string) => Promise<void>;
+  setResponsableAction: (statutId: string, prestataireId: string) => Promise<void>;
 }
 
 export function VideoBoard({
@@ -26,16 +28,19 @@ export function VideoBoard({
   videos,
   prestataires,
   interviewes,
+  responsables,
   role,
   currentPrestataireId,
   createAction,
   updateAction,
   updateStatutAction,
   deleteAction,
+  setResponsableAction,
 }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const isAdmin = role === "admin";
   const maxOrdre = statuts.length > 0 ? Math.max(...statuts.map((s) => s.ordre)) : 0;
+  const responsableParStatut = new Map(responsables.map((r) => [r.statut_id, r.prestataires ?? null]));
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,22 +62,6 @@ export function VideoBoard({
               className="mt-3 grid grid-cols-2 gap-3 rounded-lg border border-zinc-200 bg-white p-4 sm:grid-cols-3"
             >
               <input name="titre" placeholder="Titre (optionnel)" className="input" />
-              <select name="prestataire_tournage_id" defaultValue="" className="input" title="Responsable tournage">
-                <option value="">— Responsable tournage —</option>
-                {prestataires.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nom}
-                  </option>
-                ))}
-              </select>
-              <select name="prestataire_montage_id" defaultValue="" className="input" title="Responsable montage">
-                <option value="">— Responsable montage —</option>
-                {prestataires.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nom}
-                  </option>
-                ))}
-              </select>
               <select name="interviewe_id" defaultValue="" className="input">
                 <option value="">— Contact —</option>
                 {interviewes.map((i) => (
@@ -106,6 +95,7 @@ export function VideoBoard({
       >
         {statuts.map((statut) => {
           const columnVideos = videos.filter((v) => v.statut_id === statut.id);
+          const responsable = responsableParStatut.get(statut.id) ?? null;
           return (
             <div key={statut.id} className="flex flex-col gap-3 rounded-xl bg-zinc-100 p-3">
               <div className="flex items-center gap-2 px-1">
@@ -113,6 +103,26 @@ export function VideoBoard({
                 <h3 className="text-sm font-semibold text-zinc-900">{statut.label}</h3>
                 <span className="ml-auto text-xs text-zinc-400">{columnVideos.length}</span>
               </div>
+              {isAdmin ? (
+                <select
+                  key={`${statut.id}-${responsable?.id ?? ""}`}
+                  defaultValue={responsable?.id ?? ""}
+                  onChange={(e) => {
+                    void setResponsableAction(statut.id, e.target.value);
+                  }}
+                  className="input px-1 py-1 text-xs"
+                  title="Responsable de cette colonne"
+                >
+                  <option value="">— Responsable de la colonne —</option>
+                  {prestataires.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nom}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                responsable && <p className="px-1 text-xs text-zinc-500">👤 {responsable.nom}</p>
+              )}
               <div className="flex flex-col gap-2">
                 {columnVideos.map((video) => (
                   <VideoCard
@@ -120,13 +130,9 @@ export function VideoBoard({
                     video={video}
                     statuts={statuts}
                     maxOrdre={maxOrdre}
-                    prestataires={prestataires}
                     interviewes={interviewes}
-                    canEditStatut={
-                      isAdmin ||
-                      video.prestataire_tournage_id === currentPrestataireId ||
-                      video.prestataire_montage_id === currentPrestataireId
-                    }
+                    responsableColonne={responsableParStatut.get(video.statut_id ?? "") ?? null}
+                    canEditStatut={isAdmin || responsable?.id === currentPrestataireId}
                     canEditFull={isAdmin}
                     updateAction={updateAction}
                     updateStatutAction={updateStatutAction}
@@ -147,8 +153,8 @@ function VideoCard({
   video,
   statuts,
   maxOrdre,
-  prestataires,
   interviewes,
+  responsableColonne,
   canEditStatut,
   canEditFull,
   updateAction,
@@ -158,8 +164,8 @@ function VideoCard({
   video: Video;
   statuts: Statut[];
   maxOrdre: number;
-  prestataires: Prestataire[];
   interviewes: Interviewe[];
+  responsableColonne: Prestataire | null;
   canEditStatut: boolean;
   canEditFull: boolean;
   updateAction: (videoId: string, formData: FormData) => Promise<void>;
@@ -170,7 +176,7 @@ function VideoCard({
   const today = new Date().toISOString().slice(0, 10);
   // Les statuts sont personnalisables (libellé) : on se base sur la
   // position dans le pipeline (ordre) plutôt que sur le texte, qui peut
-  // être renommé par l'admin (ex. "Tourné" → "Booké").
+  // être renommé par l'admin.
   const ordreActuel = video.statuts?.ordre;
   const isLivre = ordreActuel !== undefined && ordreActuel >= maxOrdre;
   // Le tournage n'est "en retard" que tant qu'il n'a pas encore eu lieu :
@@ -197,13 +203,7 @@ function VideoCard({
               </button>
             )}
           </div>
-          {(video.prestataire_tournage || video.prestataire_montage) && (
-            <p className="mt-1 text-xs text-zinc-500">
-              {video.prestataire_tournage && <>🎥 {video.prestataire_tournage.nom}</>}
-              {video.prestataire_tournage && video.prestataire_montage && " · "}
-              {video.prestataire_montage && <>✂️ {video.prestataire_montage.nom}</>}
-            </p>
-          )}
+          {responsableColonne && <p className="mt-1 text-xs text-zinc-500">👤 {responsableColonne.nom}</p>}
           {video.interviewes && (
             <p className="mt-0.5 text-xs text-zinc-400">🎤 {contactLabel(video.interviewes)}</p>
           )}
@@ -247,22 +247,6 @@ function VideoCard({
               {statuts.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.label}
-                </option>
-              ))}
-            </select>
-            <select name="prestataire_tournage_id" defaultValue={video.prestataire_tournage_id ?? ""} className="input">
-              <option value="">— Responsable tournage —</option>
-              {prestataires.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nom}
-                </option>
-              ))}
-            </select>
-            <select name="prestataire_montage_id" defaultValue={video.prestataire_montage_id ?? ""} className="input">
-              <option value="">— Responsable montage —</option>
-              {prestataires.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nom}
                 </option>
               ))}
             </select>

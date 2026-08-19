@@ -2,9 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import type { Video, Statut, Prestataire, Interviewe } from "@/types/database";
+import type { Video, Statut, Prestataire, Interviewe, ProjetVideoResponsable } from "@/types/database";
 import { VideoBoard } from "./VideoBoard";
-import { createVideo, updateVideo, updateVideoStatut, deleteVideo } from "./actions";
+import { createVideo, updateVideo, updateVideoStatut, deleteVideo, setResponsableColonne } from "./actions";
 
 export default async function VideosPage({ params }: PageProps<"/projets/[id]/videos">) {
   const { id } = await params;
@@ -14,18 +14,18 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
   const { data: projet } = await supabase.from("projets").select("id, nom").eq("id", id).single();
   if (!projet) notFound();
 
-  const [{ data: videos }, { data: statuts }, { data: prestataires }, { data: interviewes }] = await Promise.all([
-    supabase
-      .from("videos")
-      .select(
-        "*, statuts(*), prestataire_tournage:prestataire_tournage_id(*), prestataire_montage:prestataire_montage_id(*), interviewes(*)"
-      )
-      .eq("projet_id", id)
-      .order("created_at"),
-    supabase.from("statuts").select("*").eq("type", "video").order("ordre"),
-    supabase.from("prestataires").select("*").order("nom"),
-    supabase.from("interviewes").select("id, nom, prenom").eq("projet_id", id).order("created_at"),
-  ]);
+  const [{ data: videos }, { data: statuts }, { data: prestataires }, { data: interviewes }, { data: responsables }] =
+    await Promise.all([
+      supabase
+        .from("videos")
+        .select("*, statuts(*), interviewes(*)")
+        .eq("projet_id", id)
+        .order("created_at"),
+      supabase.from("statuts").select("*").eq("type", "video").order("ordre"),
+      supabase.from("prestataires").select("*").order("nom"),
+      supabase.from("interviewes").select("id, nom, prenom").eq("projet_id", id).order("created_at"),
+      supabase.from("projet_video_responsables").select("*, prestataires(*)").eq("projet_id", id),
+    ]);
 
   const boundCreate = async (formData: FormData) => {
     "use server";
@@ -43,6 +43,10 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
     "use server";
     await deleteVideo(id, videoId);
   };
+  const boundSetResponsable = async (statutId: string, prestataireId: string) => {
+    "use server";
+    await setResponsableColonne(id, statutId, prestataireId);
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -59,12 +63,14 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
         videos={(videos ?? []) as Video[]}
         prestataires={(prestataires ?? []) as Prestataire[]}
         interviewes={(interviewes ?? []) as Interviewe[]}
+        responsables={(responsables ?? []) as ProjetVideoResponsable[]}
         role={profile.role}
         currentPrestataireId={profile.prestataire_id}
         createAction={boundCreate}
         updateAction={boundUpdate}
         updateStatutAction={boundUpdateStatut}
         deleteAction={boundDelete}
+        setResponsableAction={boundSetResponsable}
       />
     </div>
   );

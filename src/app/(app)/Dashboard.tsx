@@ -2,7 +2,16 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/Badge";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
-import { buildEcheances, dernierOrdre, groupByUrgence, one, type VideoForEcheance } from "@/lib/echeances";
+import {
+  buildEcheances,
+  buildResponsablesMap,
+  dernierOrdre,
+  groupByUrgence,
+  one,
+  premierStatutId,
+  responsableColonne,
+  type VideoForEcheance,
+} from "@/lib/echeances";
 
 interface ProjetRow {
   id: string;
@@ -16,22 +25,21 @@ export async function Dashboard() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: projets }, { data: videos }, { data: statutsVideo }] = await Promise.all([
+  const [{ data: projets }, { data: videos }, { data: statutsVideo }, { data: responsablesRows }] = await Promise.all([
     supabase.from("projets").select("id, nom, nombre_commande, clients(nom), statuts(label, couleur)").order("created_at", { ascending: false }),
-    supabase
-      .from("videos")
-      .select(
-        "id, projet_id, titre, date_tournage, date_livraison, statuts(ordre, label, couleur), prestataire_tournage:prestataire_tournage_id(id, nom), prestataire_montage:prestataire_montage_id(id, nom)"
-      ),
-    supabase.from("statuts").select("ordre").eq("type", "video"),
+    supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
+    supabase.from("statuts").select("id, ordre").eq("type", "video"),
+    supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
   ]);
 
   const projetList = (projets ?? []) as ProjetRow[];
   const videoList = (videos ?? []) as VideoForEcheance[];
   const projetNomById = new Map(projetList.map((p) => [p.id, p.nom]));
   const maxOrdre = dernierOrdre(statutsVideo ?? []);
+  const premierId = premierStatutId(statutsVideo ?? []);
+  const responsables = buildResponsablesMap(responsablesRows ?? []);
 
-  const echeances = buildEcheances(videoList, maxOrdre);
+  const echeances = buildEcheances(videoList, maxOrdre, premierId, responsables);
   const groups = groupByUrgence(echeances, today);
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();
@@ -48,10 +56,9 @@ export async function Dashboard() {
     parProjet.set(v.projet_id, entry);
   }
 
-  // Charge de travail : une vidéo pas encore tournée (1ère étape) est le
-  // travail actif du tourneur, une vidéo tournée mais pas encore livrée
-  // (étapes intermédiaires) est celui du monteur — chacun ne voit que ce
-  // qui est réellement dans son camp.
+  // Charge de travail : le responsable actif d'une vidéo est celui affecté
+  // à sa colonne actuelle ; le retard se lit sur la date pertinente pour
+  // cette étape (tournage à la 1ère étape, livraison ensuite).
   const charge = new Map<string, { nom: string; actives: number; enRetard: number }>();
   function ajouterCharge(presta: { id: string; nom: string } | null, enRetard: boolean) {
     const key = presta?.id ?? "__non_assigne__";
@@ -63,11 +70,10 @@ export async function Dashboard() {
   for (const v of videoList) {
     const statut = one(v.statuts);
     if (!statut || statut.ordre >= maxOrdre) continue;
-    if (statut.ordre === 0) {
-      ajouterCharge(one(v.prestataire_tournage), !!(v.date_tournage && v.date_tournage < today));
-    } else {
-      ajouterCharge(one(v.prestataire_montage), !!(v.date_livraison && v.date_livraison < today));
-    }
+    const resp = responsableColonne(responsables, v.projet_id, v.statut_id);
+    const enRetard =
+      statut.ordre === 0 ? !!(v.date_tournage && v.date_tournage < today) : !!(v.date_livraison && v.date_livraison < today);
+    ajouterCharge(resp, enRetard);
   }
   const chargeList = Array.from(charge.values()).sort((a, b) => b.actives - a.actives);
 

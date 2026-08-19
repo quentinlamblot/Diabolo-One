@@ -18,8 +18,7 @@ function num(formData: FormData, key: string): number {
 }
 
 // Complète le board vidéo jusqu'à `target` fiches en statut "à tourner",
-// sans jamais retirer de fiches existantes si la cible diminue. Applique les
-// responsables par défaut du projet s'ils sont définis.
+// sans jamais retirer de fiches existantes si la cible diminue.
 async function ensureVideoCount(supabase: Awaited<ReturnType<typeof createClient>>, projetId: string, target: number) {
   if (target <= 0) return;
 
@@ -30,16 +29,11 @@ async function ensureVideoCount(supabase: Awaited<ReturnType<typeof createClient
   const missing = target - (count ?? 0);
   if (missing <= 0) return;
 
-  const [{ data: premierStatut }, { data: projet }] = await Promise.all([
-    supabase.from("statuts").select("id").eq("type", "video").order("ordre").limit(1).single(),
-    supabase.from("projets").select("prestataire_tournage_defaut_id, prestataire_montage_defaut_id").eq("id", projetId).single(),
-  ]);
+  const { data: premierStatut } = await supabase.from("statuts").select("id").eq("type", "video").order("ordre").limit(1).single();
 
   const rows = Array.from({ length: missing }, () => ({
     projet_id: projetId,
     statut_id: premierStatut?.id ?? null,
-    prestataire_tournage_id: projet?.prestataire_tournage_defaut_id ?? null,
-    prestataire_montage_id: projet?.prestataire_montage_defaut_id ?? null,
   }));
   await supabase.from("videos").insert(rows);
 }
@@ -62,8 +56,6 @@ export async function createProjet(formData: FormData) {
       statut_id: str(formData, "statut_id"),
       charte_graphique: str(formData, "charte_graphique") ?? "en_attente",
       nombre_commande: nombreCommande,
-      prestataire_tournage_defaut_id: str(formData, "prestataire_tournage_defaut_id"),
-      prestataire_montage_defaut_id: str(formData, "prestataire_montage_defaut_id"),
       instructions_individuelles: str(formData, "instructions_individuelles"),
       lien_edito: str(formData, "lien_edito"),
       lien_riverside: str(formData, "lien_riverside"),
@@ -95,8 +87,6 @@ export async function updateProjet(projetId: string, formData: FormData) {
     statut_id: str(formData, "statut_id"),
     charte_graphique: str(formData, "charte_graphique") ?? "en_attente",
     nombre_commande: nombreCommande,
-    prestataire_tournage_defaut_id: str(formData, "prestataire_tournage_defaut_id"),
-    prestataire_montage_defaut_id: str(formData, "prestataire_montage_defaut_id"),
     instructions_individuelles: str(formData, "instructions_individuelles"),
     lien_edito: str(formData, "lien_edito"),
     lien_riverside: str(formData, "lien_riverside"),
