@@ -1,19 +1,20 @@
 "use client";
 
-import type { Client, Offre, Statut, Projet } from "@/types/database";
+import type { Client, Offre, Statut, Projet, Prestataire } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
 
 interface Props {
   clients: Client[];
   offres: Offre[];
   statuts: Statut[];
+  prestataires: Prestataire[];
   projet?: Projet;
   action: (formData: FormData) => void | Promise<void>;
   submitLabel?: string;
   autosave?: boolean;
 }
 
-export function ProjetForm({ clients, offres, statuts, projet, action, submitLabel, autosave }: Props) {
+export function ProjetForm({ clients, offres, statuts, prestataires, projet, action, submitLabel, autosave }: Props) {
   const fields = (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -89,7 +90,20 @@ export function ProjetForm({ clients, offres, statuts, projet, action, submitLab
             className="input"
           />
         </Field>
+        <Field label="Chef de projet">
+          <select name="chef_de_projet_id" defaultValue={projet?.chef_de_projet_id ?? ""} className="input">
+            <option value="">— Aucun —</option>
+            {prestataires.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nom}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
+      <p className="-mt-4 text-xs text-zinc-500">
+        Le chef de projet est notifié par email quand le client remplit son brief ou ajoute des contacts.
+      </p>
       {projet && (
         <p className="-mt-4 text-xs text-zinc-500">
           Augmenter ce nombre crée automatiquement les fiches vidéo manquantes en statut « à tourner ».

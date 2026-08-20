@@ -79,6 +79,7 @@ export interface Projet {
   statut_id: string | null;
   charte_graphique: CharteStatus;
   nombre_commande: number;
+  chef_de_projet_id: string | null;
   instructions_individuelles: string | null;
   lien_edito: string | null;
   lien_riverside: string | null;
@@ -88,6 +89,7 @@ export interface Projet {
   clients?: Client;
   offres?: Offre;
   statuts?: Statut;
+  chef_de_projet?: Prestataire;
 }
 
 export interface Interviewe {

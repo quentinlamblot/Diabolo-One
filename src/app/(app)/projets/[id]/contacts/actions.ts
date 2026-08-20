@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, requireAdmin } from "@/lib/auth";
+import { notifierChefDeProjet } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 
@@ -16,13 +17,15 @@ function canEditInfo(role: string) {
 }
 
 export async function createInterviewe(projetId: string, formData: FormData) {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
 
+  const nom = str(formData, "nom");
+  const prenom = str(formData, "prenom");
   const { error } = await supabase.from("interviewes").insert({
     projet_id: projetId,
-    nom: str(formData, "nom"),
-    prenom: str(formData, "prenom"),
+    nom,
+    prenom,
     email: str(formData, "email"),
     telephone: str(formData, "telephone"),
     statut_id: str(formData, "statut_id"),
@@ -31,6 +34,14 @@ export async function createInterviewe(projetId: string, formData: FormData) {
   });
 
   if (error) throw new Error(error.message);
+
+  if (profile.role === "client") {
+    const nomComplet = [prenom, nom].filter(Boolean).join(" ") || "Nouveau contact";
+    await notifierChefDeProjet(supabase, projetId, "Le client a ajouté un contact", [
+      `Le client a ajouté <strong>${nomComplet}</strong> à la liste de contacts.`,
+    ]);
+  }
+
   revalidatePath(`/projets/${projetId}/contacts`);
 }
 
@@ -220,6 +231,12 @@ export async function importInterviewes(
   if (toInsert.length > 0) {
     const { error } = await supabase.from("interviewes").insert(toInsert);
     if (error) throw new Error(error.message);
+
+    if (profile.role === "client") {
+      await notifierChefDeProjet(supabase, projetId, "Le client a importé des contacts", [
+        `Le client a importé <strong>${toInsert.length}</strong> contact(s) dans la liste de contacts.`,
+      ]);
+    }
   }
 
   revalidatePath(`/projets/${projetId}/contacts`);

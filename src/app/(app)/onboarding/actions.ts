@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
+import { notifierChefDeProjet } from "@/lib/notifications";
 import { ONBOARDING_SECTIONS } from "./questions";
 
 const FORMATS_VALIDES = ["16:9", "9:16", "16:9 et 9:16"];
@@ -47,4 +48,8 @@ export async function submitOnboarding(projetId: string, formData: FormData) {
     const admin = createAdminClient();
     await admin.from("projets").update(projetUpdate).eq("id", projetId);
   }
+
+  await notifierChefDeProjet(supabase, projetId, "Le client a rempli son brief", [
+    "Le client vient de remplir le brief d'onboarding du projet.",
+  ]);
 }

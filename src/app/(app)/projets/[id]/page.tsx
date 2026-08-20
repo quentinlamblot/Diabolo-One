@@ -11,6 +11,7 @@ import { AssignPrestataire } from "./AssignPrestataire";
 import { TrameInterview } from "./TrameInterview";
 import { genererTrame, updateTrame } from "./trameActions";
 import { ONBOARDING_SECTIONS } from "../../onboarding/questions";
+import { BriefPdfButton } from "./BriefPdfButton";
 
 export default async function ProjetDetailPage({ params }: PageProps<"/projets/[id]">) {
   const { id } = await params;
@@ -18,7 +19,7 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
   const supabase = await createClient();
 
   const [{ data: projet }, { data: videoCounts }] = await Promise.all([
-    supabase.from("projets").select("*, clients(*), offres(*), statuts(*)").eq("id", id).single(),
+    supabase.from("projets").select("*, clients(*), offres(*), statuts(*), chef_de_projet:chef_de_projet_id(*)").eq("id", id).single(),
     supabase.from("videos").select("statuts(label, couleur)").eq("projet_id", id),
   ]);
 
@@ -87,6 +88,7 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           clients={(clients ?? []) as Client[]}
           offres={(offres ?? []) as Offre[]}
           statuts={(statuts ?? []) as Statut[]}
+          prestataires={(allPrestataires ?? []) as Prestataire[]}
           projet={projet as Projet}
           action={boundUpdate}
           autosave
@@ -118,7 +120,12 @@ export default async function ProjetDetailPage({ params }: PageProps<"/projets/[
           updateAction={boundUpdateTrame}
         />
 
-        {onboarding && <BriefClient reponses={(onboarding as OnboardingReponse).reponses} />}
+        {onboarding && (
+          <BriefClient
+            projetNom={projet.nom}
+            reponses={(onboarding as OnboardingReponse).reponses}
+          />
+        )}
       </div>
     );
   }
@@ -202,6 +209,7 @@ function ProjetReadonly({ projet, videoCounts }: { projet: Projet; videoCounts: 
   return (
     <div className="grid grid-cols-2 gap-4 rounded-lg border border-zinc-200 bg-white p-5 text-sm">
       <Info label="Offre" value={projet.offres?.nom ?? "—"} />
+      <Info label="Chef de projet" value={projet.chef_de_projet?.nom ?? "—"} />
       <Info label="Format" value={projet.format} />
       <Info label="Durée moyenne" value={projet.duree_moyenne ?? "—"} />
       <Info
@@ -257,10 +265,13 @@ function ProjetReadonly({ projet, videoCounts }: { projet: Projet; videoCounts: 
   );
 }
 
-function BriefClient({ reponses }: { reponses: Record<string, string> }) {
+function BriefClient({ projetNom, reponses }: { projetNom: string; reponses: Record<string, string> }) {
   return (
     <details className="rounded-lg border border-zinc-200 bg-white p-5">
-      <summary className="cursor-pointer text-sm font-semibold text-zinc-900">Brief client (onboarding)</summary>
+      <summary className="flex cursor-pointer items-center justify-between text-sm font-semibold text-zinc-900">
+        Brief client (onboarding)
+        <BriefPdfButton projetNom={projetNom} sections={ONBOARDING_SECTIONS} reponses={reponses} />
+      </summary>
       <div className="mt-4 flex flex-col gap-5">
         {ONBOARDING_SECTIONS.map((section) => (
           <div key={section.title}>
