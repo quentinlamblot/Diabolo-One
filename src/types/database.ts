@@ -65,6 +65,7 @@ export interface Profile {
   role: UserRole;
   client_id: string | null;
   prestataire_id: string | null;
+  super_admin: boolean;
   created_at: string;
 }
 
@@ -185,4 +186,29 @@ export interface TachePrestataire {
   created_at: string;
   prestataires?: Prestataire;
   projets?: Projet;
+}
+
+export type ProdStatut = "a_venir" | "en_cours" | "termine" | "annule";
+
+export interface ProdProjet {
+  id: string;
+  nom: string;
+  client: string | null;
+  type_prestation: string | null;
+  date_prestation: string | null;
+  statut: ProdStatut;
+  valeur_deal: number | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProdProjetPrestataire {
+  id: string;
+  prod_projet_id: string;
+  prestataire_id: string;
+  montant_du: number | null;
+  date_paiement: string | null;
+  created_at: string;
+  prestataires?: Prestataire;
 }

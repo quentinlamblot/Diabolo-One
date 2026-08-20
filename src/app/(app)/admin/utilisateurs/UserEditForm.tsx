@@ -61,6 +61,12 @@ export function UserEditForm({
           </select>
         </Field>
       )}
+      {role === "admin" && (
+        <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <input type="checkbox" name="super_admin" defaultChecked={profile.super_admin} className="h-4 w-4" />
+          Super admin (accès Diabolo Prod)
+        </label>
+      )}
     </AutosaveForm>
   );
 }

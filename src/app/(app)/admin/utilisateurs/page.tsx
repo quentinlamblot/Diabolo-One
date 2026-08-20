@@ -42,7 +42,10 @@ export default async function UtilisateursAdminPage() {
               <tr key={p.id} className="hover:bg-zinc-50">
                 <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-900">{p.full_name ?? "—"}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{p.email}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{roleLabel[p.role]}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
+                  {roleLabel[p.role]}
+                  {p.super_admin && <span className="ml-1.5 text-xs font-medium text-sky-dark">(super admin)</span>}
+                </td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <div className="flex justify-end gap-3">
                     <Link href={`/admin/utilisateurs/${p.id}`} className="text-xs font-medium text-blue-600 hover:underline">

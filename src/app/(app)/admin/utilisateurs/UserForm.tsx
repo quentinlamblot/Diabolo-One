@@ -49,6 +49,12 @@ export function UserForm({
           ))}
         </select>
       )}
+      {role === "admin" && (
+        <label className="flex items-center gap-2 text-sm text-zinc-700">
+          <input type="checkbox" name="super_admin" className="h-4 w-4" />
+          Super admin (accès Diabolo Prod)
+        </label>
+      )}
       <button
         type="submit"
         className="rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark"

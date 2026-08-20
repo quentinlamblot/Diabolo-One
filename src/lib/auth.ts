@@ -29,3 +29,12 @@ export async function requireAdmin(): Promise<Profile> {
   if (profile.role !== "admin") redirect("/");
   return profile;
 }
+
+// Diabolo Prod (suivi des projets audiovisuels perso de Quentin) : un super
+// admin reste un admin standard partout ailleurs dans l'app, ce module est
+// la seule chose en plus.
+export async function requireSuperAdmin(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (profile.role !== "admin" || !profile.super_admin) redirect("/");
+  return profile;
+}

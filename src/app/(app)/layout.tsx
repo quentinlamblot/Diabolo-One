@@ -64,6 +64,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               </Link>
             </>
           )}
+
+          {profile.role === "admin" && profile.super_admin && (
+            <>
+              <div className="my-2 border-t border-white/10" />
+              <Link href="/prod" className={navLinkClass}>
+                Diabolo Prod
+              </Link>
+            </>
+          )}
         </nav>
         <div className="mt-auto border-t border-white/10 pt-4">
           <p className="px-2 text-xs text-sky/60">{profile.full_name ?? profile.email}</p>

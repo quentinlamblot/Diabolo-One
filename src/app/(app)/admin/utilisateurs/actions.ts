@@ -15,6 +15,7 @@ export async function createUserEntry(formData: FormData) {
   const role = String(formData.get("role") ?? "client") as UserRole;
   const clientId = String(formData.get("client_id") ?? "").trim();
   const prestataireId = String(formData.get("prestataire_id") ?? "").trim();
+  const superAdmin = role === "admin" && formData.get("super_admin") === "on";
 
   const admin = createAdminClient();
   const { data, error } = await admin.auth.admin.createUser({
@@ -34,6 +35,7 @@ export async function createUserEntry(formData: FormData) {
       full_name: fullName || null,
       client_id: role === "client" && clientId ? clientId : null,
       prestataire_id: role === "prestataire" && prestataireId ? prestataireId : null,
+      super_admin: superAdmin,
     })
     .eq("id", data.user.id);
 
@@ -49,6 +51,7 @@ export async function updateUserEntry(userId: string, formData: FormData) {
   const role = String(formData.get("role") ?? "client") as UserRole;
   const clientId = String(formData.get("client_id") ?? "").trim();
   const prestataireId = String(formData.get("prestataire_id") ?? "").trim();
+  const superAdmin = role === "admin" && formData.get("super_admin") === "on";
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -58,6 +61,7 @@ export async function updateUserEntry(userId: string, formData: FormData) {
       full_name: fullName || null,
       client_id: role === "client" && clientId ? clientId : null,
       prestataire_id: role === "prestataire" && prestataireId ? prestataireId : null,
+      super_admin: superAdmin,
     })
     .eq("id", userId);
 
