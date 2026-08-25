@@ -47,7 +47,6 @@ export function ContactsTable({
   const [order, setOrder] = useState<string[]>(allColumns.map((c) => c.key));
   const [widths, setWidths] = useState<Record<string, number>>({});
   const dragKey = useRef<string | null>(null);
-  const resizing = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
 
   // Colonnes ajoutées après le premier rendu (nouvelle colonne perso créée) :
   // on les ajoute à la fin de l'ordre déjà réagencé, sans le perdre.
@@ -68,21 +67,33 @@ export function ContactsTable({
     });
   }
 
-  function onResizeMove(e: MouseEvent) {
-    const r = resizing.current;
-    if (!r) return;
-    const next = Math.max(MIN_WIDTH, r.startWidth + (e.clientX - r.startX));
-    setWidths((w) => ({ ...w, [r.key]: next }));
-  }
-  function onResizeEnd() {
-    resizing.current = null;
-    document.removeEventListener("mousemove", onResizeMove);
-    document.removeEventListener("mouseup", onResizeEnd);
-  }
-  function startResize(key: string, e: React.MouseEvent) {
-    resizing.current = { key, startX: e.clientX, startWidth: widths[key] ?? DEFAULT_WIDTH };
-    document.addEventListener("mousemove", onResizeMove);
-    document.addEventListener("mouseup", onResizeEnd);
+  // Pointer Events + capture explicite plutôt que mousedown/mousemove sur le
+  // document : la capture garantit que CET élément reçoit tous les
+  // pointermove/pointerup jusqu'au relâchement, même si le curseur sort
+  // brièvement de la zone ou si le tableau se re-rend pendant le glisser
+  // (ce qui arrive à chaque pixel, puisque la largeur change en direct).
+  // C'est le mécanisme standard pour une poignée de redimensionnement
+  // fiable sur souris, trackpad et tactile.
+  function startResize(key: string, e: React.PointerEvent<HTMLSpanElement>) {
+    e.preventDefault();
+    const handle = e.currentTarget;
+    const startX = e.clientX;
+    const startWidth = widths[key] ?? DEFAULT_WIDTH;
+    handle.setPointerCapture(e.pointerId);
+
+    function onMove(ev: PointerEvent) {
+      const next = Math.max(MIN_WIDTH, startWidth + (ev.clientX - startX));
+      setWidths((w) => ({ ...w, [key]: next }));
+    }
+    function onUp(ev: PointerEvent) {
+      handle.releasePointerCapture(ev.pointerId);
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+    }
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
   }
 
   return (
@@ -117,12 +128,12 @@ export function ContactsTable({
                   {c.label}
                 </span>
                 <span
-                  onMouseDown={(e) => {
-                    e.preventDefault();
+                  onPointerDown={(e) => {
                     e.stopPropagation();
                     startResize(c.key, e);
                   }}
                   title="Glisser pour redimensionner la colonne"
+                  style={{ touchAction: "none" }}
                   className="absolute right-0 top-0 z-20 h-full w-4 cursor-col-resize border-r-4 border-zinc-300 hover:border-sky-dark hover:bg-sky/20"
                 />
               </th>
