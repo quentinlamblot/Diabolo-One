@@ -65,25 +65,54 @@ export function IntervieweRow({
     switch (key) {
       case "prenom":
         return canEditInfo ? (
-          <input name="prenom" data-autosave-field defaultValue={interviewe.prenom ?? ""} placeholder="Prénom" className={inlineInputClass} />
+          <input
+            name="prenom"
+            data-autosave-field
+            defaultValue={interviewe.prenom ?? ""}
+            title={interviewe.prenom ?? ""}
+            placeholder="Prénom"
+            className={inlineInputClass}
+          />
         ) : (
           <span className="px-1.5 text-zinc-800">{interviewe.prenom ?? "—"}</span>
         );
       case "nom":
         return canEditInfo ? (
-          <input name="nom" data-autosave-field defaultValue={interviewe.nom ?? ""} placeholder="Nom" className={inlineInputClass + " font-medium"} />
+          <input
+            name="nom"
+            data-autosave-field
+            defaultValue={interviewe.nom ?? ""}
+            title={interviewe.nom ?? ""}
+            placeholder="Nom"
+            className={inlineInputClass + " font-medium"}
+          />
         ) : (
           <span className="px-1.5 font-medium text-zinc-900">{interviewe.nom ?? "—"}</span>
         );
       case "email":
         return canEditInfo ? (
-          <input name="email" type="email" data-autosave-field defaultValue={interviewe.email ?? ""} placeholder="Email" className={inlineInputClass} />
+          <input
+            name="email"
+            type="email"
+            data-autosave-field
+            defaultValue={interviewe.email ?? ""}
+            title={interviewe.email ?? ""}
+            placeholder="Email"
+            className={inlineInputClass}
+          />
         ) : (
           <span className="px-1.5 text-zinc-600">{interviewe.email ?? "—"}</span>
         );
       case "telephone":
         return canEditInfo ? (
-          <input name="telephone" data-autosave-field defaultValue={interviewe.telephone ?? ""} placeholder="Téléphone" className={inlineInputClass} />
+          <input
+            name="telephone"
+            data-autosave-field
+            defaultValue={interviewe.telephone ?? ""}
+            title={interviewe.telephone ?? ""}
+            placeholder="Téléphone"
+            className={inlineInputClass}
+          />
         ) : (
           <span className="px-1.5 text-zinc-600">{interviewe.telephone ?? "—"}</span>
         );
@@ -111,7 +140,14 @@ export function IntervieweRow({
       case "notes":
         return canEditInfo ? (
           <div className="flex items-center gap-1">
-            <input name="notes" data-autosave-field defaultValue={interviewe.notes ?? ""} placeholder="Notes" className={inlineInputClass} />
+            <input
+              name="notes"
+              data-autosave-field
+              defaultValue={interviewe.notes ?? ""}
+              title={interviewe.notes ?? ""}
+              placeholder="Notes"
+              className={inlineInputClass}
+            />
             <LinkOpener value={interviewe.notes} />
           </div>
         ) : (
@@ -152,7 +188,14 @@ export function IntervieweRow({
         }
         return (
           <div className="flex items-center gap-1">
-            <input name={`champ_${champ.id}`} data-autosave-field defaultValue={value} placeholder={champ.label} className={inlineInputClass} />
+            <input
+              name={`champ_${champ.id}`}
+              data-autosave-field
+              defaultValue={value}
+              title={value}
+              placeholder={champ.label}
+              className={inlineInputClass}
+            />
             <LinkOpener value={value} />
           </div>
         );

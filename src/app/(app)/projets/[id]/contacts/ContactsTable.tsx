@@ -21,6 +21,7 @@ const BASE_COLUMNS: ColumnDef[] = [
 
 const DEFAULT_WIDTH = 160;
 const MIN_WIDTH = 90;
+const WIDE_WIDTH = 320;
 
 export function ContactsTable({
   interviewes,
@@ -96,15 +97,26 @@ export function ContactsTable({
     handle.addEventListener("pointercancel", onUp);
   }
 
+  // Alternative au glisser, en un clic : bascule la colonne entre une largeur
+  // large (pour lire une valeur tronquée, ex. un numéro de téléphone complet)
+  // et sa largeur d'origine.
+  function toggleWide(key: string) {
+    setWidths((w) => ({ ...w, [key]: (w[key] ?? DEFAULT_WIDTH) >= WIDE_WIDTH ? DEFAULT_WIDTH : WIDE_WIDTH }));
+  }
+
+  // Un <table> en width:auto s'étire par défaut sur toute la largeur
+  // disponible du parent (comportement normal d'une boîte de bloc), ce qui
+  // force le navigateur à rétrécir les colonnes pour tenir dans cet espace
+  // même en table-layout:fixed — les largeurs choisies ne s'affichaient donc
+  // jamais réellement. En fixant une largeur totale explicite égale à la
+  // somme des colonnes, le tableau garde sa taille naturelle et déborde
+  // dans le conteneur défilant, comme prévu.
+  const actionColWidth = canEditInfo || canDelete ? 90 : 0;
+  const totalWidth = orderedColumns.reduce((sum, c) => sum + (widths[c.key] ?? DEFAULT_WIDTH), actionColWidth);
+
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
-      <table className="divide-y divide-zinc-200 text-sm" style={{ tableLayout: "fixed" }}>
-        <colgroup>
-          {orderedColumns.map((c) => (
-            <col key={c.key} style={{ width: widths[c.key] ?? DEFAULT_WIDTH }} />
-          ))}
-          {(canEditInfo || canDelete) && <col style={{ width: 90 }} />}
-        </colgroup>
+      <table className="divide-y divide-zinc-200 text-sm" style={{ tableLayout: "fixed", width: totalWidth }}>
         <thead className="bg-zinc-50">
           <tr>
             {orderedColumns.map((c) => (
@@ -112,6 +124,7 @@ export function ContactsTable({
                 key={c.key}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDrop(c.key)}
+                style={{ width: widths[c.key] ?? DEFAULT_WIDTH }}
                 className="relative select-none whitespace-nowrap py-2.5 pl-1 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500"
               >
                 <span className="flex items-center gap-1">
@@ -132,13 +145,17 @@ export function ContactsTable({
                     e.stopPropagation();
                     startResize(c.key, e);
                   }}
-                  title="Glisser pour redimensionner la colonne"
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    toggleWide(c.key);
+                  }}
+                  title="Glisser pour redimensionner, ou double-cliquer pour agrandir/réduire"
                   style={{ touchAction: "none" }}
                   className="absolute right-0 top-0 z-20 h-full w-4 cursor-col-resize border-r-4 border-zinc-300 hover:border-sky-dark hover:bg-sky/20"
                 />
               </th>
             ))}
-            {(canEditInfo || canDelete) && <th />}
+            {(canEditInfo || canDelete) && <th style={{ width: 90 }} />}
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
