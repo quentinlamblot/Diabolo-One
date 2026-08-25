@@ -17,6 +17,7 @@ export interface Statut {
   statut_interviewe_lie_id: string | null;
   statut_video_lie_id: string | null;
   responsable_defaut_id: string | null;
+  est_etape_montage: boolean;
   created_at: string;
   statut_interviewe_lie?: Statut;
   statut_video_lie?: Statut;
@@ -59,6 +60,7 @@ export interface Offre {
   description: string | null;
   prix: number | null;
   type_interview: TypeInterview;
+  sous_type_monteur: "video_premium" | "video_classique" | null;
   created_at: string;
 }
 
@@ -182,6 +184,7 @@ export interface TachePrestataire {
   id: string;
   prestataire_id: string;
   projet_id: string | null;
+  video_id: string | null;
   mois: string;
   description: string;
   montant: number;
@@ -191,6 +194,7 @@ export interface TachePrestataire {
   quantite: number | null;
   pourcentage_remuneration: number | null;
   pourcentage_effectue: number | null;
+  paye: boolean;
   created_at: string;
   prestataires?: Prestataire;
   projets?: Projet;

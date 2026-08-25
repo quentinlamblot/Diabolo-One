@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import type { TachePrestataire, Prestataire, Projet, TarifMonteur } from "@/types/database";
-import { createTache, deleteTache, updateTarifsMonteur } from "./actions";
+import { createTache, deleteTache, updateTarifsMonteur, toggleTachePaye } from "./actions";
 import { TacheForm } from "./TacheForm";
 import Link from "next/link";
 
@@ -65,6 +65,8 @@ export default async function PaiementsAdminPage({
   }
 
   const grandTotal = list.reduce((sum, t) => sum + Number(t.montant), 0);
+  const totalARegler = list.filter((t) => !t.paye).reduce((sum, t) => sum + Number(t.montant), 0);
+  const totalRegle = list.filter((t) => t.paye).reduce((sum, t) => sum + Number(t.montant), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,11 +130,25 @@ export default async function PaiementsAdminPage({
         action={createTache}
       />
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-5">
-        <p className="text-sm text-zinc-500">Total dû ce mois-ci</p>
-        <p className="text-3xl font-semibold text-zinc-900">
-          {grandTotal.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
-        </p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-lg border border-zinc-200 bg-white p-5">
+          <p className="text-sm text-zinc-500">Total ce mois-ci</p>
+          <p className="text-3xl font-semibold text-zinc-900">
+            {grandTotal.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+          </p>
+        </div>
+        <div className="rounded-lg border border-orange-200 bg-orange-50 p-5">
+          <p className="text-sm text-orange-700">À régler</p>
+          <p className="text-3xl font-semibold text-orange-900">
+            {totalARegler.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+          </p>
+        </div>
+        <div className="rounded-lg border border-green-200 bg-green-50 p-5">
+          <p className="text-sm text-green-700">Réglé</p>
+          <p className="text-3xl font-semibold text-green-900">
+            {totalRegle.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+          </p>
+        </div>
       </div>
 
       {byPrestataire.size === 0 ? (
@@ -150,7 +166,7 @@ export default async function PaiementsAdminPage({
               <table className="min-w-full divide-y divide-zinc-100 text-sm">
                 <tbody className="divide-y divide-zinc-100">
                   {entry.taches.map((t) => (
-                    <tr key={t.id} className="hover:bg-zinc-50">
+                    <tr key={t.id} className={t.paye ? "bg-green-50/50 hover:bg-green-50" : "hover:bg-zinc-50"}>
                       <td className="whitespace-nowrap px-4 py-2.5 text-zinc-500">
                         {new Date(t.date_tache).toLocaleDateString("fr-FR")}
                       </td>
@@ -161,6 +177,9 @@ export default async function PaiementsAdminPage({
                       <td className="whitespace-nowrap px-4 py-2.5 text-zinc-500">{t.projets?.nom ?? "—"}</td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right font-medium text-zinc-900">
                         {Number(t.montant).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right">
+                        <PayeToggleButton id={t.id} paye={t.paye} />
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right">
                         <DeleteButton id={t.id} />
@@ -174,6 +193,27 @@ export default async function PaiementsAdminPage({
         </div>
       )}
     </div>
+  );
+}
+
+function PayeToggleButton({ id, paye }: { id: string; paye: boolean }) {
+  const action = async () => {
+    "use server";
+    await toggleTachePaye(id, !paye);
+  };
+  return (
+    <form action={action}>
+      <button
+        type="submit"
+        className={
+          paye
+            ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-200"
+            : "rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700 hover:bg-orange-200"
+        }
+      >
+        {paye ? "Réglé ✓" : "À régler"}
+      </button>
+    </form>
   );
 }
 

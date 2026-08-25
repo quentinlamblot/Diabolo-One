@@ -34,6 +34,7 @@ export function StatutItem({
         )}
         {statut.statut_video_lie && <span className="text-xs text-zinc-400">→ vidéo : {statut.statut_video_lie.label}</span>}
         {statut.responsable_defaut && <span className="text-xs text-zinc-400">👤 {statut.responsable_defaut.nom}</span>}
+        {statut.est_etape_montage && <span className="text-xs text-zinc-400" title="Étape de montage">✂️ Montage</span>}
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -108,6 +109,12 @@ export function StatutItem({
             </option>
           ))}
         </select>
+      )}
+      {statut.type === "video" && (
+        <label className="flex items-center gap-1 text-xs text-zinc-600" title="Le responsable de cette colonne reçoit automatiquement le paiement monteur à la livraison">
+          <input type="checkbox" name="est_etape_montage" defaultChecked={statut.est_etape_montage} className="h-3.5 w-3.5" />
+          ✂️ Montage
+        </label>
       )}
       <button
         type="button"

@@ -41,7 +41,7 @@ export async function Dashboard() {
   const responsables = buildResponsablesMap(responsablesRows ?? []);
   const responsablesGlobaux = buildResponsablesGlobauxMap(statutsVideo ?? []);
 
-  const echeances = buildEcheances(videoList, maxOrdre, premierId, responsables, responsablesGlobaux);
+  const echeances = buildEcheances(videoList, maxOrdre, premierId, responsables, responsablesGlobaux, statutsVideo ?? []);
   const groups = groupByUrgence(echeances, today);
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();

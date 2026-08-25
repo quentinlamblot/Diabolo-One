@@ -42,6 +42,7 @@ export async function updateStatutEntry(statutId: string, formData: FormData) {
       statut_interviewe_lie_id: optionalId(formData, "statut_interviewe_lie_id"),
       statut_video_lie_id: optionalId(formData, "statut_video_lie_id"),
       responsable_defaut_id: optionalId(formData, "responsable_defaut_id"),
+      est_etape_montage: formData.get("est_etape_montage") === "on",
     })
     .eq("id", statutId);
   if (error) throw new Error(error.message);

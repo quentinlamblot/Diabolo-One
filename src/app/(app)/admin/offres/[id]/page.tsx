@@ -39,6 +39,16 @@ export default async function EditOffrePage({ params }: PageProps<"/admin/offres
             <option value="longue">Longue (8 questions)</option>
           </select>
         </Field>
+        <Field label="Tarif monteur">
+          <select name="sous_type_monteur" defaultValue={offre.sous_type_monteur ?? ""} className="input">
+            <option value="">— Non défini —</option>
+            <option value="video_classique">Tarif classique</option>
+            <option value="video_premium">Tarif premium</option>
+          </select>
+        </Field>
+        <p className="-mt-2 text-xs text-zinc-500">
+          Détermine le montant versé automatiquement au monteur quand une vidéo de cette offre est livrée.
+        </p>
       </AutosaveForm>
     </div>
   );

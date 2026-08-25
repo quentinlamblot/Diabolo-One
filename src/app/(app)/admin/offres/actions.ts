@@ -10,6 +10,11 @@ function str(formData: FormData, key: string): string | null {
   return s.length ? s : null;
 }
 
+function sousTypeMonteur(formData: FormData): "video_premium" | "video_classique" | null {
+  const v = str(formData, "sous_type_monteur");
+  return v === "video_premium" || v === "video_classique" ? v : null;
+}
+
 export async function createOffreEntry(formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
@@ -19,6 +24,7 @@ export async function createOffreEntry(formData: FormData) {
     description: str(formData, "description"),
     prix: prixRaw ? Number(prixRaw) : null,
     type_interview: str(formData, "type_interview") ?? "courte",
+    sous_type_monteur: sousTypeMonteur(formData),
   });
   if (error) throw new Error(error.message);
   revalidatePath("/admin/offres");
@@ -35,6 +41,7 @@ export async function updateOffreEntry(offreId: string, formData: FormData) {
       description: str(formData, "description"),
       prix: prixRaw ? Number(prixRaw) : null,
       type_interview: str(formData, "type_interview") ?? "courte",
+      sous_type_monteur: sousTypeMonteur(formData),
     })
     .eq("id", offreId);
   if (error) throw new Error(error.message);

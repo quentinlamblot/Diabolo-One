@@ -88,6 +88,14 @@ export async function deleteTache(tacheId: string) {
   revalidatePath("/admin/paiements");
 }
 
+export async function toggleTachePaye(tacheId: string, paye: boolean) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from("taches_prestataires").update({ paye }).eq("id", tacheId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/admin/paiements");
+}
+
 export async function updateTarifsMonteur(formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();

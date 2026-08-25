@@ -26,8 +26,15 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
   const premierId = premierStatutId(statutsVideo ?? []);
   const responsables = buildResponsablesMap(responsablesRows ?? []);
   const responsablesGlobaux = buildResponsablesGlobauxMap(statutsVideo ?? []);
-  const toutesLesEcheances = buildEcheances((videos ?? []) as VideoForEcheance[], maxOrdre, premierId, responsables, responsablesGlobaux);
-  const echeances = toutesLesEcheances.filter((e) => e.prestataireId === prestataireId);
+  const toutesLesEcheances = buildEcheances(
+    (videos ?? []) as VideoForEcheance[],
+    maxOrdre,
+    premierId,
+    responsables,
+    responsablesGlobaux,
+    statutsVideo ?? []
+  );
+  const echeances = toutesLesEcheances.filter((e) => e.prestataireIds.includes(prestataireId));
   const groups = groupByUrgence(echeances, today);
 
   const projetNomById = new Map<string, string>();

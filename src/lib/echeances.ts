@@ -14,6 +14,11 @@ export interface Echeance {
   titre: string | null;
   prestataireId: string | null;
   prestataireNom: string | null;
+  // Tous les prestataires responsables d'une colonne du pipeline de ce
+  // projet (pas seulement celui de l'étape actuelle de la vidéo) : tant
+  // qu'une vidéo est en cours, chacun d'eux est responsable de sa livraison
+  // dans les temps et doit voir son échéance.
+  prestataireIds: string[];
   type: "tournage" | "livraison";
   date: string;
 }
@@ -85,18 +90,47 @@ export function premierStatutId(statuts: { id: string; ordre: number }[]): strin
   return statuts.reduce((min, s) => (s.ordre < min.ordre ? s : min)).id;
 }
 
+// Tous les prestataires affectés à une colonne du pipeline vidéo pour ce
+// projet (responsable spécifique au projet, sinon défaut global de la
+// colonne) : chacun d'eux partage la responsabilité de livrer la vidéo dans
+// les temps, pas seulement celui de l'étape où elle se trouve actuellement.
+function prestatairesPipeline(
+  projetId: string,
+  statutsPipeline: { id: string }[],
+  responsables: ResponsablesParColonne,
+  responsablesGlobaux?: ResponsablesGlobauxParColonne
+): ResponsableEntry[] {
+  const parId = new Map<string, ResponsableEntry>();
+  for (const s of statutsPipeline) {
+    const r = responsableColonne(responsables, projetId, s.id, responsablesGlobaux);
+    if (r) parId.set(r.id, r);
+  }
+  return Array.from(parId.values());
+}
+
 // Une échéance de tournage n'a de sens que tant que le tournage n'a pas eu
 // lieu (1ère étape du pipeline) ; une échéance de livraison reste valable
-// tant que la vidéo n'est pas à la dernière étape. Le responsable de
-// chacune est celui affecté à la colonne concernée (1ère colonne pour le
-// tournage, colonne actuelle pour la livraison).
+// tant que la vidéo n'est pas à la dernière étape. Le responsable "principal"
+// affiché est celui de la colonne concernée, mais l'échéance est aussi
+// rattachée à tous les autres prestataires du pipeline de ce projet, car
+// tous sont responsables de la livraison dans les temps.
 export function buildEcheances(
   videos: VideoForEcheance[],
   maxOrdre: number,
   premierStatutIdVideo: string | null,
   responsables: ResponsablesParColonne,
-  responsablesGlobaux?: ResponsablesGlobauxParColonne
+  responsablesGlobaux?: ResponsablesGlobauxParColonne,
+  statutsVideoPipeline?: { id: string; ordre: number }[]
 ): Echeance[] {
+  const statutsPipeline = (statutsVideoPipeline ?? []).filter((s) => s.ordre < maxOrdre);
+  const pipelineParProjet = new Map<string, ResponsableEntry[]>();
+  function prestatairesDuProjet(projetId: string): string[] {
+    if (!pipelineParProjet.has(projetId)) {
+      pipelineParProjet.set(projetId, prestatairesPipeline(projetId, statutsPipeline, responsables, responsablesGlobaux));
+    }
+    return pipelineParProjet.get(projetId)!.map((r) => r.id);
+  }
+
   const echeances: Echeance[] = [];
   for (const v of videos) {
     const statut = one(v.statuts);
@@ -110,6 +144,7 @@ export function buildEcheances(
         titre: v.titre,
         prestataireId: resp?.id ?? null,
         prestataireNom: resp?.nom ?? null,
+        prestataireIds: prestatairesDuProjet(v.projet_id),
         type: "tournage",
         date: v.date_tournage,
       });
@@ -122,6 +157,7 @@ export function buildEcheances(
         titre: v.titre,
         prestataireId: resp?.id ?? null,
         prestataireNom: resp?.nom ?? null,
+        prestataireIds: prestatairesDuProjet(v.projet_id),
         type: "livraison",
         date: v.date_livraison,
       });

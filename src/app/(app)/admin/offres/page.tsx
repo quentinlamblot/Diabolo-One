@@ -14,7 +14,7 @@ export default async function OffresAdminPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold text-zinc-900">Offres</h1>
 
-      <form action={createOffreEntry} className="grid grid-cols-5 gap-3 rounded-lg border border-zinc-200 bg-white p-4">
+      <form action={createOffreEntry} className="grid grid-cols-6 gap-3 rounded-lg border border-zinc-200 bg-white p-4">
         <input name="nom" placeholder="Nom de l'offre" required className="input" />
         <input name="description" placeholder="Description" className="input" />
         <input name="prix" type="number" step="0.01" placeholder="Prix (€)" className="input" />
@@ -22,10 +22,18 @@ export default async function OffresAdminPage() {
           <option value="courte">Interview courte</option>
           <option value="longue">Interview longue</option>
         </select>
+        <select name="sous_type_monteur" defaultValue="" className="input" title="Tarif monteur appliqué automatiquement à la livraison">
+          <option value="">Tarif monteur —</option>
+          <option value="video_classique">Tarif classique</option>
+          <option value="video_premium">Tarif premium</option>
+        </select>
         <button type="submit" className="rounded-full bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-sky-dark">
           Ajouter
         </button>
       </form>
+      <p className="-mt-4 text-xs text-zinc-500">
+        Le tarif monteur détermine le montant versé automatiquement au monteur quand une vidéo de cette offre est livrée.
+      </p>
 
       <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
         <table className="min-w-full divide-y divide-zinc-200 text-sm">
@@ -35,6 +43,7 @@ export default async function OffresAdminPage() {
               <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">Description</th>
               <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">Prix</th>
               <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">Interview</th>
+              <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">Tarif monteur</th>
               <th />
             </tr>
           </thead>
@@ -46,6 +55,9 @@ export default async function OffresAdminPage() {
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{o.prix != null ? `${o.prix} €` : "—"}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
                   {o.type_interview === "longue" ? "Longue (8 questions)" : "Courte (4 questions)"}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
+                  {o.sous_type_monteur === "video_premium" ? "Premium" : o.sous_type_monteur === "video_classique" ? "Classique" : "—"}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3">
                   <div className="flex justify-end gap-3">
