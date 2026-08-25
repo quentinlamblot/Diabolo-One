@@ -66,7 +66,7 @@ const SCREENS = [
     icon: ContactIcon,
     badge: "sky" as const,
     title: "Ajoutez vos contacts",
-    text: "Vous allez maintenant pouvoir ajouter les personnes que vous souhaitez faire interviewer.",
+    text: "Vous allez maintenant pouvoir ajouter les personnes que vous souhaitez faire interviewer, une par une ou en important un fichier Excel — un modèle est téléchargeable directement depuis cette page.",
   },
   {
     icon: HandshakeIcon,

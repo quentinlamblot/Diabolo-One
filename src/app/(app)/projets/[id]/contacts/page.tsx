@@ -6,7 +6,8 @@ import type { Interviewe, IntervieweChamp, Statut } from "@/types/database";
 import { AddIntervieweForm } from "./AddIntervieweForm";
 import { AddColumnForm } from "./AddColumnForm";
 import { ImportContactsForm } from "./ImportContactsForm";
-import { IntervieweRow } from "./IntervieweRow";
+import { ContactsTable } from "./ContactsTable";
+import { DownloadTemplateButton } from "./DownloadTemplateButton";
 import {
   createInterviewe,
   updateInterviewe,
@@ -55,6 +56,19 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
     await createIntervieweChamp(formData);
   };
 
+  const boundUpdate = async (intervieweId: string, formData: FormData) => {
+    "use server";
+    await updateInterviewe(id, intervieweId, champIds, formData);
+  };
+  const boundStatut = async (intervieweId: string, statutId: string) => {
+    "use server";
+    await updateIntervieweStatut(id, intervieweId, statutId);
+  };
+  const boundDelete = async (intervieweId: string) => {
+    "use server";
+    await deleteInterviewe(id, intervieweId);
+  };
+
   const canAdd = profile.role === "admin" || profile.role === "client";
   const canEditInfo = profile.role === "admin" || profile.role === "client";
   const canEditStatut = profile.role === "admin" || profile.role === "prestataire";
@@ -62,14 +76,22 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Link href={`/projets/${id}`} className="text-sm text-zinc-500 hover:underline">
-          ← {projet.nom}
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Suivi des contacts</h1>
-        <p className="text-sm text-zinc-500">
-          {list.length} personne{list.length > 1 ? "s" : ""} à interviewer
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <Link href={`/projets/${id}`} className="text-sm text-zinc-500 hover:underline">
+            ← {projet.nom}
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Suivi des contacts</h1>
+          <p className="text-sm text-zinc-500">
+            {list.length} personne{list.length > 1 ? "s" : ""} à interviewer
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <DownloadTemplateButton champs={champList} />
+          <Link href={`/projets/${id}/videos`} className="rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200">
+            Vidéos
+          </Link>
+        </div>
       </div>
 
       {canAdd && (
@@ -106,64 +128,23 @@ export default async function ContactsPage({ params }: PageProps<"/projets/[id]/
       {list.length === 0 ? (
         <p className="text-sm text-zinc-500">Aucun contact pour le moment.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-zinc-200 bg-white">
-          <table className="min-w-full divide-y divide-zinc-200 text-sm">
-            <thead className="bg-zinc-50">
-              <tr>
-                <Th>Prénom</Th>
-                <Th>Nom</Th>
-                <Th>Email</Th>
-                <Th>Téléphone</Th>
-                <Th>Date du RDV</Th>
-                <Th>Statut</Th>
-                <Th>Notes</Th>
-                {champList.map((c) => (
-                  <Th key={c.id}>{c.label}</Th>
-                ))}
-                {(canEditInfo || canDelete) && <Th />}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {list.map((i) => {
-                const boundUpdate = async (formData: FormData) => {
-                  "use server";
-                  await updateInterviewe(id, i.id, champIds, formData);
-                };
-                const boundStatut = async (statutId: string) => {
-                  "use server";
-                  await updateIntervieweStatut(id, i.id, statutId);
-                };
-                const boundDelete = async () => {
-                  "use server";
-                  await deleteInterviewe(id, i.id);
-                };
-                return (
-                  <IntervieweRow
-                    key={i.id}
-                    interviewe={i}
-                    champs={champList}
-                    statuts={statutList}
-                    canEditInfo={canEditInfo}
-                    canEditStatut={canEditStatut}
-                    canDelete={canDelete}
-                    updateAction={boundUpdate}
-                    statutAction={boundStatut}
-                    deleteAction={boundDelete}
-                  />
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <p className="-mb-2 text-xs text-zinc-400">
+            Glissez l&apos;en-tête d&apos;une colonne pour la réordonner, ou son bord droit pour la redimensionner.
+          </p>
+          <ContactsTable
+            interviewes={list}
+            champs={champList}
+            statuts={statutList}
+            canEditInfo={canEditInfo}
+            canEditStatut={canEditStatut}
+            canDelete={canDelete}
+            updateAction={boundUpdate}
+            statutAction={boundStatut}
+            deleteAction={boundDelete}
+          />
+        </>
       )}
     </div>
-  );
-}
-
-function Th({ children }: { children?: React.ReactNode }) {
-  return (
-    <th className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">
-      {children}
-    </th>
   );
 }

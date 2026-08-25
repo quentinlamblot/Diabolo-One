@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/Badge";
-import type { Statut } from "@/types/database";
+import type { Statut, Prestataire } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
 
 export function StatutItem({
   statut,
   intervieweStatuts,
+  videoStatuts,
+  prestataires,
   updateAction,
   deleteAction,
 }: {
   statut: Statut;
   intervieweStatuts?: Statut[];
+  videoStatuts?: Statut[];
+  prestataires?: Prestataire[];
   updateAction: (formData: FormData) => void | Promise<void>;
   deleteAction: () => void;
 }) {
@@ -28,6 +32,8 @@ export function StatutItem({
         {statut.statut_interviewe_lie && (
           <span className="text-xs text-zinc-400">→ contact : {statut.statut_interviewe_lie.label}</span>
         )}
+        {statut.statut_video_lie && <span className="text-xs text-zinc-400">→ vidéo : {statut.statut_video_lie.label}</span>}
+        {statut.responsable_defaut && <span className="text-xs text-zinc-400">👤 {statut.responsable_defaut.nom}</span>}
         <button
           type="button"
           onClick={() => setEditing(true)}
@@ -69,6 +75,36 @@ export function StatutItem({
           {intervieweStatuts.map((s) => (
             <option key={s.id} value={s.id}>
               → contact : {s.label}
+            </option>
+          ))}
+        </select>
+      )}
+      {videoStatuts && (
+        <select
+          name="statut_video_lie_id"
+          defaultValue={statut.statut_video_lie_id ?? ""}
+          className="input w-44"
+          title="Statut de la vidéo déclenché par ce statut contact"
+        >
+          <option value="">— Aucune vidéo déclenchée —</option>
+          {videoStatuts.map((s) => (
+            <option key={s.id} value={s.id}>
+              → vidéo : {s.label}
+            </option>
+          ))}
+        </select>
+      )}
+      {prestataires && (
+        <select
+          name="responsable_defaut_id"
+          defaultValue={statut.responsable_defaut_id ?? ""}
+          className="input w-44"
+          title="Responsable par défaut de cette colonne, pour tout projet qui n'a pas son propre choix"
+        >
+          <option value="">— Aucun responsable par défaut —</option>
+          {prestataires.map((p) => (
+            <option key={p.id} value={p.id}>
+              👤 {p.nom}
             </option>
           ))}
         </select>

@@ -21,7 +21,7 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
         .select("*, statuts(*), interviewes(*)")
         .eq("projet_id", id)
         .order("created_at"),
-      supabase.from("statuts").select("*").eq("type", "video").order("ordre"),
+      supabase.from("statuts").select("*, responsable_defaut:responsable_defaut_id(*)").eq("type", "video").order("ordre"),
       supabase.from("prestataires").select("*").order("nom"),
       supabase.from("interviewes").select("id, nom, prenom").eq("projet_id", id).order("created_at"),
       supabase.from("projet_video_responsables").select("*, prestataires(*)").eq("projet_id", id),
@@ -50,12 +50,17 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <Link href={`/projets/${id}`} className="text-sm text-zinc-500 hover:underline">
-          ← {projet.nom}
+      <div className="flex items-start justify-between">
+        <div>
+          <Link href={`/projets/${id}`} className="text-sm text-zinc-500 hover:underline">
+            ← {projet.nom}
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Vidéos</h1>
+          <p className="text-sm text-zinc-500">{(videos ?? []).length} vidéo(s) sur ce projet</p>
+        </div>
+        <Link href={`/projets/${id}/contacts`} className="rounded-md bg-zinc-100 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-200">
+          Suivi des contacts
         </Link>
-        <h1 className="mt-1 text-2xl font-semibold text-zinc-900">Vidéos</h1>
-        <p className="text-sm text-zinc-500">{(videos ?? []).length} vidéo(s) sur ce projet</p>
       </div>
 
       <VideoBoard

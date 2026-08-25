@@ -3,6 +3,9 @@
 import { useRef, useState } from "react";
 import type { Interviewe, IntervieweChamp, Statut } from "@/types/database";
 import { StatutSelect } from "./StatutSelect";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LinkOpener, isUrl } from "@/components/LinkOpener";
+import type { ColumnDef } from "./ContactsTable";
 
 const rowColor: Record<string, string> = {
   vert: "bg-green-50 hover:bg-green-100",
@@ -15,6 +18,7 @@ const inlineInputClass =
 
 export function IntervieweRow({
   interviewe,
+  columns,
   champs,
   statuts,
   canEditInfo,
@@ -25,6 +29,7 @@ export function IntervieweRow({
   deleteAction,
 }: {
   interviewe: Interviewe;
+  columns: ColumnDef[];
   champs: IntervieweChamp[];
   statuts: Statut[];
   canEditInfo: boolean;
@@ -38,12 +43,13 @@ export function IntervieweRow({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const bg = rowColor[interviewe.statuts?.categorie ?? ""] ?? "hover:bg-zinc-50";
+  const champById = new Map(champs.map((c) => [c.id, c]));
 
   function handleAutosave() {
     const el = rowRef.current;
     if (!el) return;
     const fd = new FormData();
-    el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>("[data-autosave-field]").forEach((input) => {
+    el.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>("[data-autosave-field]").forEach((input) => {
       fd.set(input.name, input.value);
     });
     setSaving(true);
@@ -55,78 +61,42 @@ export function IntervieweRow({
     });
   }
 
-  return (
-    <tr ref={rowRef} className={bg} onBlur={canEditInfo ? handleAutosave : undefined}>
-      <td className="px-2 py-1.5">
-        {canEditInfo ? (
-          <input
-            name="prenom"
-            data-autosave-field
-            defaultValue={interviewe.prenom ?? ""}
-            placeholder="Prénom"
-            className={inlineInputClass}
-          />
+  function renderCell(key: string) {
+    switch (key) {
+      case "prenom":
+        return canEditInfo ? (
+          <input name="prenom" data-autosave-field defaultValue={interviewe.prenom ?? ""} placeholder="Prénom" className={inlineInputClass} />
         ) : (
           <span className="px-1.5 text-zinc-800">{interviewe.prenom ?? "—"}</span>
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        {canEditInfo ? (
-          <input
-            name="nom"
-            data-autosave-field
-            defaultValue={interviewe.nom ?? ""}
-            placeholder="Nom"
-            className={inlineInputClass + " font-medium"}
-          />
+        );
+      case "nom":
+        return canEditInfo ? (
+          <input name="nom" data-autosave-field defaultValue={interviewe.nom ?? ""} placeholder="Nom" className={inlineInputClass + " font-medium"} />
         ) : (
           <span className="px-1.5 font-medium text-zinc-900">{interviewe.nom ?? "—"}</span>
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        {canEditInfo ? (
-          <input
-            name="email"
-            type="email"
-            data-autosave-field
-            defaultValue={interviewe.email ?? ""}
-            placeholder="Email"
-            className={inlineInputClass}
-          />
+        );
+      case "email":
+        return canEditInfo ? (
+          <input name="email" type="email" data-autosave-field defaultValue={interviewe.email ?? ""} placeholder="Email" className={inlineInputClass} />
         ) : (
           <span className="px-1.5 text-zinc-600">{interviewe.email ?? "—"}</span>
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        {canEditInfo ? (
-          <input
-            name="telephone"
-            data-autosave-field
-            defaultValue={interviewe.telephone ?? ""}
-            placeholder="Téléphone"
-            className={inlineInputClass}
-          />
+        );
+      case "telephone":
+        return canEditInfo ? (
+          <input name="telephone" data-autosave-field defaultValue={interviewe.telephone ?? ""} placeholder="Téléphone" className={inlineInputClass} />
         ) : (
           <span className="px-1.5 text-zinc-600">{interviewe.telephone ?? "—"}</span>
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        {canEditInfo ? (
-          <input
-            name="date_rdv"
-            type="date"
-            data-autosave-field
-            defaultValue={interviewe.date_rdv ?? ""}
-            className={inlineInputClass}
-          />
+        );
+      case "date_rdv":
+        return canEditInfo ? (
+          <input name="date_rdv" type="date" data-autosave-field defaultValue={interviewe.date_rdv ?? ""} className={inlineInputClass} />
         ) : (
           <span className="px-1.5 text-zinc-600">
             {interviewe.date_rdv ? new Date(interviewe.date_rdv).toLocaleDateString("fr-FR") : "—"}
           </span>
-        )}
-      </td>
-      <td className="whitespace-nowrap px-4 py-3">
-        {canEditStatut ? (
+        );
+      case "statut":
+        return canEditStatut ? (
           <StatutSelect statuts={statuts} value={interviewe.statut_id} onChange={statutAction} />
         ) : interviewe.statuts ? (
           <span
@@ -137,38 +107,66 @@ export function IntervieweRow({
           </span>
         ) : (
           "—"
-        )}
-      </td>
-      <td className="px-2 py-1.5">
-        {canEditInfo ? (
-          <input
-            name="notes"
-            data-autosave-field
-            defaultValue={interviewe.notes ?? ""}
-            placeholder="Notes"
-            className={inlineInputClass}
-          />
+        );
+      case "notes":
+        return canEditInfo ? (
+          <div className="flex items-center gap-1">
+            <input name="notes" data-autosave-field defaultValue={interviewe.notes ?? ""} placeholder="Notes" className={inlineInputClass} />
+            <LinkOpener value={interviewe.notes} />
+          </div>
         ) : (
-          <span className="px-1.5 text-zinc-600">{interviewe.notes ?? "—"}</span>
-        )}
-      </td>
-      {champs.map((c) =>
-        canEditInfo ? (
-          <td key={c.id} className="px-2 py-1.5">
-            <input
-              name={`champ_${c.id}`}
+          <span className="flex items-center gap-1 px-1.5 text-zinc-600">
+            {interviewe.notes ?? "—"}
+            <LinkOpener value={interviewe.notes} />
+          </span>
+        );
+      default: {
+        const champ = champById.get(key);
+        if (!champ) return null;
+        const value = interviewe.custom_fields?.[champ.id] ?? "";
+        if (!canEditInfo) {
+          return (
+            <span className="flex items-center gap-1 text-zinc-600">
+              {value || "—"}
+              {isUrl(value) && <LinkOpener value={value} />}
+            </span>
+          );
+        }
+        if (champ.type === "liste") {
+          return (
+            <select
+              name={`champ_${champ.id}`}
               data-autosave-field
-              defaultValue={interviewe.custom_fields?.[c.id] ?? ""}
-              placeholder={c.label}
+              defaultValue={value}
+              onChange={handleAutosave}
               className={inlineInputClass}
-            />
-          </td>
-        ) : (
-          <td key={c.id} className="whitespace-nowrap px-4 py-3 text-zinc-600">
-            {interviewe.custom_fields?.[c.id] || "—"}
-          </td>
-        )
-      )}
+            >
+              <option value="">—</option>
+              {champ.options.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          );
+        }
+        return (
+          <div className="flex items-center gap-1">
+            <input name={`champ_${champ.id}`} data-autosave-field defaultValue={value} placeholder={champ.label} className={inlineInputClass} />
+            <LinkOpener value={value} />
+          </div>
+        );
+      }
+    }
+  }
+
+  return (
+    <tr ref={rowRef} className={bg} onBlur={canEditInfo ? handleAutosave : undefined}>
+      {columns.map((c) => (
+        <td key={c.key} className="px-2 py-1.5">
+          {renderCell(c.key)}
+        </td>
+      ))}
       {(canEditInfo || canDelete) && (
         <td className="whitespace-nowrap px-4 py-3">
           <div className="flex items-center justify-end gap-3">
@@ -179,9 +177,9 @@ export function IntervieweRow({
             )}
             {canDelete && (
               <form action={deleteAction}>
-                <button type="submit" className="text-xs font-medium text-red-500 hover:underline">
+                <ConfirmSubmitButton message="Supprimer définitivement ce contact ?" className="text-xs font-medium text-red-500 hover:underline">
                   Supprimer
-                </button>
+                </ConfirmSubmitButton>
               </form>
             )}
           </div>

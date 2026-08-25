@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Video, Statut, Prestataire, Interviewe, ProjetVideoResponsable, UserRole } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 
 function contactLabel(i: Pick<Interviewe, "nom" | "prenom">) {
   return [i.prenom, i.nom].filter(Boolean).join(" ") || "Sans nom";
@@ -40,7 +41,14 @@ export function VideoBoard({
   const [showAdd, setShowAdd] = useState(false);
   const isAdmin = role === "admin";
   const maxOrdre = statuts.length > 0 ? Math.max(...statuts.map((s) => s.ordre)) : 0;
-  const responsableParStatut = new Map(responsables.map((r) => [r.statut_id, r.prestataires ?? null]));
+  // Le responsable du projet prime ; à défaut, celui défini par défaut au
+  // niveau global (Gestion > Statuts) s'applique.
+  const responsableParStatut = new Map(
+    statuts.map((s) => {
+      const parProjet = responsables.find((r) => r.statut_id === s.id)?.prestataires;
+      return [s.id, parProjet ?? s.responsable_defaut ?? null];
+    })
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -279,9 +287,9 @@ function VideoCard({
               Fermer
             </button>
             <form action={() => deleteAction(video.id)}>
-              <button type="submit" className="text-xs text-red-600 hover:underline">
+              <ConfirmSubmitButton message="Supprimer définitivement cette vidéo ?" className="text-xs text-red-600 hover:underline">
                 Supprimer
-              </button>
+              </ConfirmSubmitButton>
             </form>
           </div>
         </div>

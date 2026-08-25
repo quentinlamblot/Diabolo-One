@@ -1,7 +1,15 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
-import { buildEcheances, buildResponsablesMap, dernierOrdre, groupByUrgence, premierStatutId, type VideoForEcheance } from "@/lib/echeances";
+import {
+  buildEcheances,
+  buildResponsablesMap,
+  buildResponsablesGlobauxMap,
+  dernierOrdre,
+  groupByUrgence,
+  premierStatutId,
+  type VideoForEcheance,
+} from "@/lib/echeances";
 
 export async function PrestataireDashboard({ prestataireId, nom }: { prestataireId: string; nom: string }) {
   const supabase = await createClient();
@@ -10,14 +18,15 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
   const [{ data: videos }, { data: assignations }, { data: statutsVideo }, { data: responsablesRows }] = await Promise.all([
     supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
     supabase.from("projet_prestataires").select("projets(id, nom, statuts(label, couleur))").eq("prestataire_id", prestataireId),
-    supabase.from("statuts").select("id, ordre").eq("type", "video"),
+    supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
     supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
   ]);
 
   const maxOrdre = dernierOrdre(statutsVideo ?? []);
   const premierId = premierStatutId(statutsVideo ?? []);
   const responsables = buildResponsablesMap(responsablesRows ?? []);
-  const toutesLesEcheances = buildEcheances((videos ?? []) as VideoForEcheance[], maxOrdre, premierId, responsables);
+  const responsablesGlobaux = buildResponsablesGlobauxMap(statutsVideo ?? []);
+  const toutesLesEcheances = buildEcheances((videos ?? []) as VideoForEcheance[], maxOrdre, premierId, responsables, responsablesGlobaux);
   const echeances = toutesLesEcheances.filter((e) => e.prestataireId === prestataireId);
   const groups = groupByUrgence(echeances, today);
 

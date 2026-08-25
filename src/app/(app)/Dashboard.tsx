@@ -5,6 +5,7 @@ import { EcheancesPanel } from "@/components/EcheancesPanel";
 import {
   buildEcheances,
   buildResponsablesMap,
+  buildResponsablesGlobauxMap,
   dernierOrdre,
   groupByUrgence,
   one,
@@ -28,7 +29,7 @@ export async function Dashboard() {
   const [{ data: projets }, { data: videos }, { data: statutsVideo }, { data: responsablesRows }] = await Promise.all([
     supabase.from("projets").select("id, nom, nombre_commande, clients(nom), statuts(label, couleur)").order("created_at", { ascending: false }),
     supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
-    supabase.from("statuts").select("id, ordre").eq("type", "video"),
+    supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
     supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
   ]);
 
@@ -38,8 +39,9 @@ export async function Dashboard() {
   const maxOrdre = dernierOrdre(statutsVideo ?? []);
   const premierId = premierStatutId(statutsVideo ?? []);
   const responsables = buildResponsablesMap(responsablesRows ?? []);
+  const responsablesGlobaux = buildResponsablesGlobauxMap(statutsVideo ?? []);
 
-  const echeances = buildEcheances(videoList, maxOrdre, premierId, responsables);
+  const echeances = buildEcheances(videoList, maxOrdre, premierId, responsables, responsablesGlobaux);
   const groups = groupByUrgence(echeances, today);
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();
@@ -70,7 +72,7 @@ export async function Dashboard() {
   for (const v of videoList) {
     const statut = one(v.statuts);
     if (!statut || statut.ordre >= maxOrdre) continue;
-    const resp = responsableColonne(responsables, v.projet_id, v.statut_id);
+    const resp = responsableColonne(responsables, v.projet_id, v.statut_id, responsablesGlobaux);
     const enRetard =
       statut.ordre === 0 ? !!(v.date_tournage && v.date_tournage < today) : !!(v.date_livraison && v.date_livraison < today);
     ajouterCharge(resp, enRetard);

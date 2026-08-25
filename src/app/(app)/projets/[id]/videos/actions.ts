@@ -1,8 +1,10 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { defaultVideoTitre } from "@/lib/videoTitre";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -46,13 +48,22 @@ export async function createVideo(projetId: string, formData: FormData) {
 
   const supabase = await createClient();
 
-  const { data: premierStatut } = await supabase.from("statuts").select("id").eq("type", "video").order("ordre").limit(1).single();
+  const intervieweId = str(formData, "interviewe_id");
+  const [{ data: premierStatut }, { data: contact }] = await Promise.all([
+    supabase.from("statuts").select("id").eq("type", "video").order("ordre").limit(1).single(),
+    intervieweId ? supabase.from("interviewes").select("prenom, nom").eq("id", intervieweId).single() : Promise.resolve({ data: null }),
+  ]);
+
+  const newId = randomUUID();
+  const titreSaisi = str(formData, "titre");
+  const titre = titreSaisi ?? (contact ? defaultVideoTitre(contact.prenom, contact.nom, newId) : null);
 
   const { error } = await supabase.from("videos").insert({
+    id: newId,
     projet_id: projetId,
-    titre: str(formData, "titre"),
+    titre,
     statut_id: premierStatut?.id ?? null,
-    interviewe_id: str(formData, "interviewe_id"),
+    interviewe_id: intervieweId,
     date_tournage: str(formData, "date_tournage"),
     date_livraison: str(formData, "date_livraison"),
   });

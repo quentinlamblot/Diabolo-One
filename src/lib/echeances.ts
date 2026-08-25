@@ -47,13 +47,30 @@ export function buildResponsablesMap(
   return map;
 }
 
+// Responsable par défaut global d'une colonne (Gestion > Statuts), utilisé
+// pour tout projet qui n'a pas défini son propre responsable pour cette
+// colonne dans projet_video_responsables.
+export type ResponsablesGlobauxParColonne = Map<string, ResponsableEntry>;
+
+export function buildResponsablesGlobauxMap(
+  statuts: { id: string; responsable_defaut: { id: string; nom: string } | { id: string; nom: string }[] | null }[]
+): ResponsablesGlobauxParColonne {
+  const map: ResponsablesGlobauxParColonne = new Map();
+  for (const s of statuts) {
+    const p = one(s.responsable_defaut);
+    if (p) map.set(s.id, p);
+  }
+  return map;
+}
+
 export function responsableColonne(
   responsables: ResponsablesParColonne,
   projetId: string,
-  statutId: string | null
+  statutId: string | null,
+  responsablesGlobaux?: ResponsablesGlobauxParColonne
 ): ResponsableEntry | null {
   if (!statutId) return null;
-  return responsables.get(cle(projetId, statutId)) ?? null;
+  return responsables.get(cle(projetId, statutId)) ?? responsablesGlobaux?.get(statutId) ?? null;
 }
 
 // Les statuts vidéo sont personnalisables par l'admin (libellé, couleur) :
@@ -77,7 +94,8 @@ export function buildEcheances(
   videos: VideoForEcheance[],
   maxOrdre: number,
   premierStatutIdVideo: string | null,
-  responsables: ResponsablesParColonne
+  responsables: ResponsablesParColonne,
+  responsablesGlobaux?: ResponsablesGlobauxParColonne
 ): Echeance[] {
   const echeances: Echeance[] = [];
   for (const v of videos) {
@@ -85,7 +103,7 @@ export function buildEcheances(
     if (statut && statut.ordre >= maxOrdre) continue;
 
     if (v.date_tournage && statut?.ordre === 0) {
-      const resp = responsableColonne(responsables, v.projet_id, premierStatutIdVideo);
+      const resp = responsableColonne(responsables, v.projet_id, premierStatutIdVideo, responsablesGlobaux);
       echeances.push({
         videoId: v.id,
         projetId: v.projet_id,
@@ -97,7 +115,7 @@ export function buildEcheances(
       });
     }
     if (v.date_livraison) {
-      const resp = responsableColonne(responsables, v.projet_id, v.statut_id);
+      const resp = responsableColonne(responsables, v.projet_id, v.statut_id, responsablesGlobaux);
       echeances.push({
         videoId: v.id,
         projetId: v.projet_id,

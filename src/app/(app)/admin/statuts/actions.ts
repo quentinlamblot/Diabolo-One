@@ -24,11 +24,14 @@ export async function createStatutEntry(formData: FormData) {
   revalidatePath("/admin/statuts");
 }
 
+function optionalId(formData: FormData, key: string): string | null {
+  const raw = formData.get(key);
+  return typeof raw === "string" && raw.trim().length > 0 ? raw : null;
+}
+
 export async function updateStatutEntry(statutId: string, formData: FormData) {
   await requireAdmin();
   const supabase = await createClient();
-  const rawCible = formData.get("statut_interviewe_lie_id");
-  const cible = typeof rawCible === "string" && rawCible.trim().length > 0 ? rawCible : null;
   const { error } = await supabase
     .from("statuts")
     .update({
@@ -36,7 +39,9 @@ export async function updateStatutEntry(statutId: string, formData: FormData) {
       couleur: String(formData.get("couleur") ?? "#94a3b8"),
       categorie: categorieOrNull(formData),
       ordre: Number(formData.get("ordre") ?? 0),
-      statut_interviewe_lie_id: cible,
+      statut_interviewe_lie_id: optionalId(formData, "statut_interviewe_lie_id"),
+      statut_video_lie_id: optionalId(formData, "statut_video_lie_id"),
+      responsable_defaut_id: optionalId(formData, "responsable_defaut_id"),
     })
     .eq("id", statutId);
   if (error) throw new Error(error.message);
@@ -48,6 +53,21 @@ export async function deleteStatutEntry(statutId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("statuts").delete().eq("id", statutId);
   if (error) throw new Error(error.message);
+  revalidatePath("/admin/statuts");
+}
+
+// Échange la position (ordre) de deux statuts pour réordonner les colonnes
+// d'un pipeline sans avoir à ressaisir les numéros d'ordre à la main.
+export async function swapStatutOrdre(statutIdA: string, statutIdB: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data: rows } = await supabase.from("statuts").select("id, ordre").in("id", [statutIdA, statutIdB]);
+  if (!rows || rows.length !== 2) return;
+  const [a, b] = rows;
+  await Promise.all([
+    supabase.from("statuts").update({ ordre: b.ordre }).eq("id", a.id),
+    supabase.from("statuts").update({ ordre: a.ordre }).eq("id", b.id),
+  ]);
   revalidatePath("/admin/statuts");
 }
 

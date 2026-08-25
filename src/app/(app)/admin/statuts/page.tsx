@@ -1,15 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
-import type { Statut } from "@/types/database";
-import { createStatutEntry, updateStatutEntry, deleteStatutEntry, resynchroniserContactsVideo } from "./actions";
+import type { Statut, Prestataire } from "@/types/database";
+import { createStatutEntry, updateStatutEntry, deleteStatutEntry, resynchroniserContactsVideo, swapStatutOrdre } from "./actions";
 import { StatutItem } from "./StatutItem";
 import { ResyncButton } from "./ResyncButton";
 
 export default async function StatutsAdminPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const { data: statuts } = await supabase.from("statuts").select("*, statut_interviewe_lie:statut_interviewe_lie_id(*)").order("type").order("ordre");
+  const [{ data: statuts }, { data: prestataires }] = await Promise.all([
+    supabase
+      .from("statuts")
+      .select("*, statut_interviewe_lie:statut_interviewe_lie_id(*), statut_video_lie:statut_video_lie_id(*), responsable_defaut:responsable_defaut_id(*)")
+      .order("type")
+      .order("ordre"),
+    supabase.from("prestataires").select("*").order("nom"),
+  ]);
   const list = (statuts ?? []) as Statut[];
+  const prestataireList = (prestataires ?? []) as Prestataire[];
   const projetStatuts = list.filter((s) => s.type === "projet");
   const intervieweStatuts = list.filter((s) => s.type === "interviewe");
   const videoStatuts = list.filter((s) => s.type === "video");
@@ -47,14 +55,13 @@ export default async function StatutsAdminPage() {
           <ResyncButton action={resynchroniserContactsVideo} />
         </div>
         <p className="-mt-1 mb-3 text-xs text-zinc-500">
-          Le champ « → contact » définit le statut appliqué automatiquement au contact lié quand une vidéo atteint
-          cette étape (ex. « Booké » peut déclencher « Booké » ou « Tourné » côté contact, selon ce que représente
-          la colonne). « Resynchroniser » réapplique cette correspondance à toutes les vidéos existantes, y compris
-          celles qui n&apos;ont jamais déclenché de synchro.
+          Les flèches réordonnent les colonnes du Kanban vidéo. « → contact » définit le statut appliqué
+          automatiquement au contact lié quand une vidéo atteint cette étape. « Responsable par défaut » s&apos;applique
+          à tout projet qui n&apos;a pas choisi son propre responsable pour cette colonne.
         </p>
         <div className="flex flex-wrap gap-2">
           {videoStatuts.length === 0 && <p className="text-sm text-zinc-500">Aucun statut.</p>}
-          {videoStatuts.map((s) => {
+          {videoStatuts.map((s, idx) => {
             const boundUpdate = async (formData: FormData) => {
               "use server";
               await updateStatutEntry(s.id, formData);
@@ -63,23 +70,60 @@ export default async function StatutsAdminPage() {
               "use server";
               await deleteStatutEntry(s.id);
             };
+            const boundMoveUp = async () => {
+              "use server";
+              await swapStatutOrdre(s.id, videoStatuts[idx - 1].id);
+            };
+            const boundMoveDown = async () => {
+              "use server";
+              await swapStatutOrdre(s.id, videoStatuts[idx + 1].id);
+            };
             return (
-              <StatutItem key={s.id} statut={s} intervieweStatuts={intervieweStatuts} updateAction={boundUpdate} deleteAction={boundDelete} />
+              <div key={s.id} className="flex items-center gap-1 rounded-md border border-zinc-100 p-1">
+                <div className="flex flex-col">
+                  <form action={boundMoveUp}>
+                    <button type="submit" disabled={idx === 0} className="px-1 text-xs text-zinc-400 hover:text-zinc-700 disabled:opacity-20">
+                      ▲
+                    </button>
+                  </form>
+                  <form action={boundMoveDown}>
+                    <button
+                      type="submit"
+                      disabled={idx === videoStatuts.length - 1}
+                      className="px-1 text-xs text-zinc-400 hover:text-zinc-700 disabled:opacity-20"
+                    >
+                      ▼
+                    </button>
+                  </form>
+                </div>
+                <StatutItem
+                  statut={s}
+                  intervieweStatuts={intervieweStatuts}
+                  prestataires={prestataireList}
+                  updateAction={boundUpdate}
+                  deleteAction={boundDelete}
+                />
+              </div>
             );
           })}
         </div>
       </div>
 
       <StatutGroup title="Statuts projet" list={projetStatuts} />
-      <StatutGroup title="Statuts interviewé" list={intervieweStatuts} />
+      <StatutGroup title="Statuts interviewé" list={intervieweStatuts} videoStatuts={videoStatuts} />
     </div>
   );
 }
 
-function StatutGroup({ title, list }: { title: string; list: Statut[] }) {
+function StatutGroup({ title, list, videoStatuts }: { title: string; list: Statut[]; videoStatuts?: Statut[] }) {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-5">
       <h2 className="mb-3 text-sm font-semibold text-zinc-900">{title}</h2>
+      {videoStatuts && (
+        <p className="-mt-1 mb-3 text-xs text-zinc-500">
+          « → vidéo » crée ou fait avancer automatiquement la vidéo liée quand un contact atteint ce statut.
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         {list.length === 0 && <p className="text-sm text-zinc-500">Aucun statut.</p>}
         {list.map((s) => {
@@ -91,7 +135,7 @@ function StatutGroup({ title, list }: { title: string; list: Statut[] }) {
             "use server";
             await deleteStatutEntry(s.id);
           };
-          return <StatutItem key={s.id} statut={s} updateAction={boundUpdate} deleteAction={boundDelete} />;
+          return <StatutItem key={s.id} statut={s} videoStatuts={videoStatuts} updateAction={boundUpdate} deleteAction={boundDelete} />;
         })}
       </div>
     </div>

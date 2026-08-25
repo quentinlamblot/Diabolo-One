@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import type { Client, Offre, Statut, Projet, Prestataire } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
+import { LinkOpener } from "@/components/LinkOpener";
 
 interface Props {
   clients: Client[];
@@ -14,7 +16,11 @@ interface Props {
   autosave?: boolean;
 }
 
+const FORMATS_PRESETS = ["16:9", "9:16", "4:5", "16:9 et 9:16"];
+
 export function ProjetForm({ clients, offres, statuts, prestataires, projet, action, submitLabel, autosave }: Props) {
+  const [formatValue, setFormatValue] = useState(projet?.format ?? "16:9");
+
   const fields = (
     <>
       <div className="grid grid-cols-2 gap-4">
@@ -47,11 +53,34 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
           </select>
         </Field>
         <Field label="Format">
-          <select name="format" defaultValue={projet?.format ?? "16:9"} className="input">
-            <option value="16:9">16:9</option>
-            <option value="9:16">9:16</option>
-            <option value="16:9 et 9:16">16:9 et 9:16</option>
-          </select>
+          {/* Un seul champ, toujours le même : un select qui ferait
+              apparaître/disparaître un input au même moment où on lit le
+              formulaire enverrait une valeur de transition au lieu du vrai
+              format (le rendu React n'a pas encore eu lieu à cet instant). */}
+          <div className="flex items-center gap-2">
+            <input
+              name="format"
+              value={formatValue}
+              onChange={(e) => setFormatValue(e.target.value)}
+              placeholder="ex: 16:9"
+              className="input"
+            />
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) setFormatValue(e.target.value);
+              }}
+              title="Formats courants"
+              className="input w-14 shrink-0 px-1"
+            >
+              <option value="">▾</option>
+              {FORMATS_PRESETS.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          </div>
         </Field>
         <Field label="Durée moyenne">
           <input
@@ -112,22 +141,28 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
 
       <div className="grid grid-cols-2 gap-4">
         <Field label="Lien édito">
-          <input
-            name="lien_edito"
-            type="url"
-            defaultValue={projet?.lien_edito ?? ""}
-            placeholder="https://..."
-            className="input"
-          />
+          <div className="flex items-center gap-1.5">
+            <input
+              name="lien_edito"
+              type="url"
+              defaultValue={projet?.lien_edito ?? ""}
+              placeholder="https://..."
+              className="input"
+            />
+            <LinkOpener value={projet?.lien_edito} />
+          </div>
         </Field>
         <Field label="Lien Riverside">
-          <input
-            name="lien_riverside"
-            type="url"
-            defaultValue={projet?.lien_riverside ?? ""}
-            placeholder="https://..."
-            className="input"
-          />
+          <div className="flex items-center gap-1.5">
+            <input
+              name="lien_riverside"
+              type="url"
+              defaultValue={projet?.lien_riverside ?? ""}
+              placeholder="https://..."
+              className="input"
+            />
+            <LinkOpener value={projet?.lien_riverside} />
+          </div>
         </Field>
       </div>
 

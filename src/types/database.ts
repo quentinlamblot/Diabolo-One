@@ -1,5 +1,5 @@
 export type UserRole = "admin" | "prestataire" | "client";
-export type FormatType = "16:9" | "9:16" | "16:9 et 9:16";
+export type FormatType = string;
 export type CharteStatus = "ok" | "en_attente";
 export type StatutType = "projet" | "interviewe" | "video";
 export type TypeRemuneration = "monteur" | "graphiste" | "chef_de_projet";
@@ -15,8 +15,12 @@ export interface Statut {
   categorie: Categorie | null;
   ordre: number;
   statut_interviewe_lie_id: string | null;
+  statut_video_lie_id: string | null;
+  responsable_defaut_id: string | null;
   created_at: string;
   statut_interviewe_lie?: Statut;
+  statut_video_lie?: Statut;
+  responsable_defaut?: Prestataire;
 }
 
 export interface Client {
@@ -134,10 +138,14 @@ export interface ProjetVideoResponsable {
   prestataires?: Prestataire;
 }
 
+export type ChampType = "texte" | "liste";
+
 export interface IntervieweChamp {
   id: string;
   label: string;
   ordre: number;
+  type: ChampType;
+  options: string[];
   created_at: string;
 }
 
