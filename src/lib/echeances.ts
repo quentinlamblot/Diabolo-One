@@ -21,6 +21,11 @@ export interface Echeance {
   prestataireIds: string[];
   type: "tournage" | "livraison";
   date: string;
+  // Étape actuelle de la vidéo (ex. "Habillage", "En montage"), pour
+  // distinguer un simple aperçu du travail à venir ailleurs dans le pipeline
+  // d'une échéance qui concerne réellement l'étape du prestataire.
+  statutLabel: string | null;
+  statutCouleur: string | null;
 }
 
 export interface ResponsableEntry {
@@ -147,6 +152,8 @@ export function buildEcheances(
         prestataireIds: prestatairesDuProjet(v.projet_id),
         type: "tournage",
         date: v.date_tournage,
+        statutLabel: statut?.label ?? null,
+        statutCouleur: statut?.couleur ?? null,
       });
     }
     if (v.date_livraison) {
@@ -160,6 +167,8 @@ export function buildEcheances(
         prestataireIds: prestatairesDuProjet(v.projet_id),
         type: "livraison",
         date: v.date_livraison,
+        statutLabel: statut?.label ?? null,
+        statutCouleur: statut?.couleur ?? null,
       });
     }
   }

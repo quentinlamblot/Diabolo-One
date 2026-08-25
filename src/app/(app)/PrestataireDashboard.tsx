@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
+import { AVenirPanel } from "@/components/AVenirPanel";
 import {
   buildEcheances,
   buildResponsablesMap,
   buildResponsablesGlobauxMap,
   dernierOrdre,
   groupByUrgence,
+  one,
   premierStatutId,
+  responsableColonne,
   type VideoForEcheance,
 } from "@/lib/echeances";
 
@@ -34,8 +37,26 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
     responsablesGlobaux,
     statutsVideo ?? []
   );
-  const echeances = toutesLesEcheances.filter((e) => e.prestataireIds.includes(prestataireId));
+  // « À faire » reste strictement les échéances de l'étape où le prestataire
+  // est responsable en ce moment (ex. les dates de livraison des vidéos dans
+  // sa propre colonne montage) : un tournage n'est pas sa tâche, même si la
+  // vidéo finira un jour chez lui.
+  const echeances = toutesLesEcheances.filter((e) => e.prestataireId === prestataireId);
   const groups = groupByUrgence(echeances, today);
+
+  // « À venir » : le travail qui remonte vers lui ailleurs dans le pipeline
+  // (tournage, habillage...) sans encore être de son ressort — pour anticiper
+  // la charge sans le présenter comme une tâche à faire.
+  const aVenir = toutesLesEcheances
+    .filter((e) => e.prestataireId !== prestataireId && e.prestataireIds.includes(prestataireId))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const nombreDansMaCase = (videos ?? []).filter((v) => {
+    const statut = one(v.statuts);
+    if (!statut || statut.ordre >= maxOrdre) return false;
+    const resp = responsableColonne(responsables, v.projet_id, v.statut_id, responsablesGlobaux);
+    return resp?.id === prestataireId;
+  }).length;
 
   const projetNomById = new Map<string, string>();
   for (const a of assignations ?? []) {
@@ -61,13 +82,25 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
       </div>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-zinc-900">À faire</h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-zinc-900">À faire</h2>
+          {nombreDansMaCase > 0 && (
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+              {nombreDansMaCase} vidéo(s) dans votre case
+            </span>
+          )}
+        </div>
         <EcheancesPanel
           groups={groups}
           projetNomById={projetNomById}
           showPrestataire={false}
           emptyLabel="Aucune échéance sur vos vidéos pour le moment."
         />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-zinc-900">Bientôt (pas encore à vous)</h2>
+        <AVenirPanel echeances={aVenir} projetNomById={projetNomById} />
       </section>
 
       {mesProjets.length > 0 && (
