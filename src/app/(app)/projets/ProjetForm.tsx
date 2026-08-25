@@ -166,6 +166,43 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
         </Field>
       </div>
 
+      <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-zinc-900">Habillage</span>
+          <label className="flex items-center gap-2 text-sm text-zinc-700">
+            <input type="checkbox" name="habillage_fait" defaultChecked={projet?.habillage_fait ?? false} className="h-4 w-4" />
+            Fait
+          </label>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          <Field label="Lien Drive (fichiers sources)">
+            <div className="flex items-center gap-1.5">
+              <input
+                name="habillage_lien"
+                type="url"
+                defaultValue={projet?.habillage_lien ?? ""}
+                placeholder="https://..."
+                className="input"
+              />
+              <LinkOpener value={projet?.habillage_lien} />
+            </div>
+          </Field>
+          <Field label="Date">
+            <input name="habillage_date" type="date" defaultValue={projet?.habillage_date ?? ""} className="input" />
+          </Field>
+          <Field label="Prestataire">
+            <select name="habillage_prestataire_id" defaultValue={projet?.habillage_prestataire_id ?? ""} className="input">
+              <option value="">— Aucun —</option>
+              {prestataires.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nom}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </div>
+
       <Field label="Informations complémentaires">
         <textarea
           name="infos_complementaires"

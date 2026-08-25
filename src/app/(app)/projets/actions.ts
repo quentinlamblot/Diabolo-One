@@ -17,6 +17,10 @@ function num(formData: FormData, key: string): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function bool(formData: FormData, key: string): boolean {
+  return formData.get(key) === "on";
+}
+
 // Complète le board vidéo jusqu'à `target` fiches en statut "à tourner",
 // sans jamais retirer de fiches existantes si la cible diminue.
 async function ensureVideoCount(supabase: Awaited<ReturnType<typeof createClient>>, projetId: string, target: number) {
@@ -60,6 +64,10 @@ export async function createProjet(formData: FormData) {
       instructions_individuelles: str(formData, "instructions_individuelles"),
       lien_edito: str(formData, "lien_edito"),
       lien_riverside: str(formData, "lien_riverside"),
+      habillage_fait: bool(formData, "habillage_fait"),
+      habillage_lien: str(formData, "habillage_lien"),
+      habillage_date: str(formData, "habillage_date"),
+      habillage_prestataire_id: str(formData, "habillage_prestataire_id"),
     })
     .select("id")
     .single();
@@ -92,6 +100,10 @@ export async function updateProjet(projetId: string, formData: FormData) {
     instructions_individuelles: str(formData, "instructions_individuelles"),
     lien_edito: str(formData, "lien_edito"),
     lien_riverside: str(formData, "lien_riverside"),
+    habillage_fait: bool(formData, "habillage_fait"),
+    habillage_lien: str(formData, "habillage_lien"),
+    habillage_date: str(formData, "habillage_date"),
+    habillage_prestataire_id: str(formData, "habillage_prestataire_id"),
   };
 
   const { error } = await supabase.from("projets").update(payload).eq("id", projetId);

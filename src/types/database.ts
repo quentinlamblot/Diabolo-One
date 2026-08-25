@@ -90,6 +90,10 @@ export interface Projet {
   instructions_individuelles: string | null;
   lien_edito: string | null;
   lien_riverside: string | null;
+  habillage_fait: boolean;
+  habillage_lien: string | null;
+  habillage_date: string | null;
+  habillage_prestataire_id: string | null;
   created_at: string;
   updated_at: string;
   // relations jointes (optionnelles selon la requête)
@@ -97,6 +101,7 @@ export interface Projet {
   offres?: Offre;
   statuts?: Statut;
   chef_de_projet?: Prestataire;
+  habillage_prestataire?: Prestataire;
 }
 
 export interface Interviewe {
