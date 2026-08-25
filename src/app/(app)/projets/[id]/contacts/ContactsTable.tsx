@@ -99,25 +99,30 @@ export function ContactsTable({
             {orderedColumns.map((c) => (
               <th
                 key={c.key}
-                draggable
-                onDragStart={() => {
-                  dragKey.current = c.key;
-                }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDrop(c.key)}
-                title="Glisser pour réordonner la colonne"
-                className="relative cursor-move select-none whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                className="relative select-none whitespace-nowrap py-2.5 pl-1 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500"
               >
-                {c.label}
+                <span className="flex items-center gap-1">
+                  <span
+                    draggable
+                    onDragStart={() => {
+                      dragKey.current = c.key;
+                    }}
+                    title="Glisser pour réordonner la colonne"
+                    className="cursor-move text-zinc-300 hover:text-zinc-500"
+                  >
+                    ⠿
+                  </span>
+                  {c.label}
+                </span>
                 <span
                   onMouseDown={(e) => {
-                    e.stopPropagation();
+                    e.preventDefault();
                     startResize(c.key, e);
                   }}
-                  onClick={(e) => e.stopPropagation()}
-                  draggable={false}
-                  title="Glisser pour redimensionner"
-                  className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize hover:bg-sky/40"
+                  title="Glisser pour redimensionner la colonne"
+                  className="absolute -right-1.5 top-0 z-10 h-full w-3 cursor-col-resize hover:bg-sky/30"
                 />
               </th>
             ))}
