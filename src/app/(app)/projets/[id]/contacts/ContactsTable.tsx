@@ -101,7 +101,7 @@ export function ContactsTable({
                 key={c.key}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDrop(c.key)}
-                className="relative select-none whitespace-nowrap py-2.5 pl-1 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                className="relative select-none whitespace-nowrap py-2.5 pl-1 pr-4 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500"
               >
                 <span className="flex items-center gap-1">
                   <span
@@ -119,10 +119,11 @@ export function ContactsTable({
                 <span
                   onMouseDown={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     startResize(c.key, e);
                   }}
                   title="Glisser pour redimensionner la colonne"
-                  className="absolute -right-1.5 top-0 z-10 h-full w-3 cursor-col-resize hover:bg-sky/30"
+                  className="absolute right-0 top-0 z-20 h-full w-4 cursor-col-resize border-r-4 border-zinc-300 hover:border-sky-dark hover:bg-sky/20"
                 />
               </th>
             ))}
