@@ -44,14 +44,14 @@ export function EcheancesPanel({
               <div className="flex flex-col divide-y divide-zinc-100">
                 {items.map((e) => (
                   <Link
-                    key={`${e.videoId}-${e.type}`}
-                    href={`/projets/${e.projetId}/videos`}
+                    key={`${e.videoId ?? "habillage"}-${e.type}`}
+                    href={e.type === "habillage" ? `/projets/${e.projetId}` : `/projets/${e.projetId}/videos`}
                     className="flex flex-col gap-0.5 py-2 text-sm hover:bg-zinc-50"
                   >
                     <span className="font-medium text-zinc-900">{projetNomById.get(e.projetId) ?? "Projet"}</span>
                     <span className="text-xs text-zinc-500">{e.titre || "Vidéo sans titre"}</span>
                     <span className={`text-xs font-medium ${accent}`}>
-                      {e.type === "tournage" ? "Tournage" : "Livraison"} · {formatDateCourte(e.date)}
+                      {e.type === "tournage" ? "Tournage" : e.type === "livraison" ? "Livraison" : "Habillage"} · {formatDateCourte(e.date)}
                       {showPrestataire && e.prestataireNom && ` · ${e.prestataireNom}`}
                     </span>
                   </Link>

@@ -4,6 +4,7 @@ import { EcheancesPanel } from "@/components/EcheancesPanel";
 import { AVenirPanel } from "@/components/AVenirPanel";
 import {
   buildEcheances,
+  buildHabillageEcheances,
   buildResponsablesMap,
   buildResponsablesGlobauxMap,
   dernierOrdre,
@@ -11,6 +12,7 @@ import {
   one,
   premierStatutId,
   responsableColonne,
+  type ProjetPourHabillage,
   type VideoForEcheance,
 } from "@/lib/echeances";
 
@@ -18,12 +20,17 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: videos }, { data: assignations }, { data: statutsVideo }, { data: responsablesRows }] = await Promise.all([
-    supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
-    supabase.from("projet_prestataires").select("projets(id, nom, statuts(label, couleur))").eq("prestataire_id", prestataireId),
-    supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
-    supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
-  ]);
+  const [{ data: videos }, { data: assignations }, { data: statutsVideo }, { data: responsablesRows }, { data: projetsHabillage }] =
+    await Promise.all([
+      supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
+      supabase.from("projet_prestataires").select("projets(id, nom, statuts(label, couleur))").eq("prestataire_id", prestataireId),
+      supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
+      supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
+      supabase
+        .from("projets")
+        .select("id, nom, habillage_fait, habillage_date, habillage_prestataire_id, habillage_prestataire:habillage_prestataire_id(id, nom)")
+        .eq("habillage_prestataire_id", prestataireId),
+    ]);
 
   const maxOrdre = dernierOrdre(statutsVideo ?? []);
   const premierId = premierStatutId(statutsVideo ?? []);
@@ -40,8 +47,12 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
   // « À faire » reste strictement les échéances de l'étape où le prestataire
   // est responsable en ce moment (ex. les dates de livraison des vidéos dans
   // sa propre colonne montage) : un tournage n'est pas sa tâche, même si la
-  // vidéo finira un jour chez lui.
-  const echeances = toutesLesEcheances.filter((e) => e.prestataireId === prestataireId);
+  // vidéo finira un jour chez lui. L'habillage s'y ajoute directement : c'est
+  // une affectation par projet, pas une étape du pipeline vidéo.
+  const habillageEcheances = buildHabillageEcheances((projetsHabillage ?? []) as ProjetPourHabillage[]);
+  const echeances = [...toutesLesEcheances.filter((e) => e.prestataireId === prestataireId), ...habillageEcheances].sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
   const groups = groupByUrgence(echeances, today);
 
   // « À venir » : le travail qui remonte vers lui ailleurs dans le pipeline
@@ -62,6 +73,12 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
   for (const a of assignations ?? []) {
     const projet = Array.isArray(a.projets) ? a.projets[0] : a.projets;
     if (projet) projetNomById.set(projet.id, projet.nom);
+  }
+  // Un prestataire peut être assigné à l'habillage d'un projet sans être
+  // dans sa liste de "prestataires affectés" : sans ça le nom du projet
+  // n'apparaîtrait pas dans son échéance.
+  for (const p of projetsHabillage ?? []) {
+    projetNomById.set(p.id, p.nom);
   }
 
   const mesProjets = (assignations ?? [])

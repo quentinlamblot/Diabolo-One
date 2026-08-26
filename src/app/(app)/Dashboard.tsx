@@ -4,6 +4,7 @@ import { Badge } from "@/components/Badge";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
 import {
   buildEcheances,
+  buildHabillageEcheances,
   buildResponsablesMap,
   buildResponsablesGlobauxMap,
   dernierOrdre,
@@ -11,12 +12,11 @@ import {
   one,
   premierStatutId,
   responsableColonne,
+  type ProjetPourHabillage,
   type VideoForEcheance,
 } from "@/lib/echeances";
 
-interface ProjetRow {
-  id: string;
-  nom: string;
+interface ProjetRow extends ProjetPourHabillage {
   nombre_commande: number;
   clients: { nom: string } | { nom: string }[] | null;
   statuts: { label: string; couleur: string } | { label: string; couleur: string }[] | null;
@@ -27,7 +27,12 @@ export async function Dashboard() {
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: projets }, { data: videos }, { data: statutsVideo }, { data: responsablesRows }] = await Promise.all([
-    supabase.from("projets").select("id, nom, nombre_commande, clients(nom), statuts(label, couleur)").order("created_at", { ascending: false }),
+    supabase
+      .from("projets")
+      .select(
+        "id, nom, nombre_commande, clients(nom), statuts(label, couleur), habillage_fait, habillage_date, habillage_prestataire_id, habillage_prestataire:habillage_prestataire_id(id, nom)"
+      )
+      .order("created_at", { ascending: false }),
     supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
     supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
     supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
@@ -41,7 +46,10 @@ export async function Dashboard() {
   const responsables = buildResponsablesMap(responsablesRows ?? []);
   const responsablesGlobaux = buildResponsablesGlobauxMap(statutsVideo ?? []);
 
-  const echeances = buildEcheances(videoList, maxOrdre, premierId, responsables, responsablesGlobaux, statutsVideo ?? []);
+  const echeances = [
+    ...buildEcheances(videoList, maxOrdre, premierId, responsables, responsablesGlobaux, statutsVideo ?? []),
+    ...buildHabillageEcheances(projetList),
+  ].sort((a, b) => a.date.localeCompare(b.date));
   const groups = groupByUrgence(echeances, today);
 
   const parProjet = new Map<string, { total: number; livrees: number; parStatut: Map<string, { count: number; couleur: string }> }>();

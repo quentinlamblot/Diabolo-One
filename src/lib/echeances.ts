@@ -9,7 +9,9 @@ export interface VideoForEcheance {
 }
 
 export interface Echeance {
-  videoId: string;
+  // Vidéo concernée, ou null pour une échéance qui ne porte pas sur une
+  // vidéo précise (ex. l'habillage, qui est une tâche par projet).
+  videoId: string | null;
   projetId: string;
   titre: string | null;
   prestataireId: string | null;
@@ -19,7 +21,7 @@ export interface Echeance {
   // qu'une vidéo est en cours, chacun d'eux est responsable de sa livraison
   // dans les temps et doit voir son échéance.
   prestataireIds: string[];
-  type: "tournage" | "livraison";
+  type: "tournage" | "livraison" | "habillage";
   date: string;
   // Étape actuelle de la vidéo (ex. "Habillage", "En montage"), pour
   // distinguer un simple aperçu du travail à venir ailleurs dans le pipeline
@@ -171,6 +173,39 @@ export function buildEcheances(
         statutCouleur: statut?.couleur ?? null,
       });
     }
+  }
+  return echeances.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export interface ProjetPourHabillage {
+  id: string;
+  nom: string;
+  habillage_fait: boolean;
+  habillage_date: string | null;
+  habillage_prestataire_id: string | null;
+  habillage_prestataire: { id: string; nom: string } | { id: string; nom: string }[] | null;
+}
+
+// L'habillage n'est pas une étape du pipeline vidéo mais une tâche unique
+// par projet (Gestion > fiche projet) : elle a sa propre échéance, tant
+// qu'elle n'est pas cochée "fait" et qu'une date limite est renseignée.
+export function buildHabillageEcheances(projets: ProjetPourHabillage[]): Echeance[] {
+  const echeances: Echeance[] = [];
+  for (const p of projets) {
+    if (p.habillage_fait || !p.habillage_date || !p.habillage_prestataire_id) continue;
+    const prestataire = one(p.habillage_prestataire);
+    echeances.push({
+      videoId: null,
+      projetId: p.id,
+      titre: "Habillage",
+      prestataireId: p.habillage_prestataire_id,
+      prestataireNom: prestataire?.nom ?? null,
+      prestataireIds: [p.habillage_prestataire_id],
+      type: "habillage",
+      date: p.habillage_date,
+      statutLabel: "Habillage",
+      statutCouleur: "#a855f7",
+    });
   }
   return echeances.sort((a, b) => a.date.localeCompare(b.date));
 }
