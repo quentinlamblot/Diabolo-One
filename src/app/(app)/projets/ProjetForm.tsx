@@ -201,6 +201,7 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
             </select>
           </Field>
         </div>
+        <p className="text-xs text-zinc-500">Le prestataire est notifié par email lors de son affectation à l&apos;habillage.</p>
       </div>
 
       <Field label="Informations complémentaires">

@@ -42,16 +42,47 @@ async function ensureVideoCount(supabase: Awaited<ReturnType<typeof createClient
   await supabase.from("videos").insert(rows);
 }
 
+// Prévient le prestataire assigné à l'habillage qu'il a du travail sur ce
+// projet, comme pour une affectation classique — en mettant en avant la
+// date limite, l'information la plus utile pour lui.
+async function notifierHabillage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  projetNom: string | null,
+  prestataireId: string,
+  habillageDate: string | null
+) {
+  const { data: prestataire } = await supabase.from("prestataires").select("nom, email").eq("id", prestataireId).single();
+  if (!prestataire?.email) return;
+
+  const dateFormatee = habillageDate
+    ? new Date(habillageDate).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
+
+  await sendEmail({
+    to: prestataire.email,
+    subject: `Habillage à faire : ${projetNom ?? "un projet"}`,
+    html: `
+      <p>Bonjour ${prestataire.nom},</p>
+      <p>Vous êtes en charge de l'habillage du projet <strong>${projetNom ?? ""}</strong>.</p>
+      ${dateFormatee ? `<p>Date limite : <strong>${dateFormatee}</strong></p>` : ""}
+      <p>Connectez-vous à Gestion Projet pour voir le détail.</p>
+    `,
+  });
+}
+
 export async function createProjet(formData: FormData) {
   const profile = await requireProfile();
   if (profile.role !== "admin") throw new Error("Non autorisé");
 
   const supabase = await createClient();
   const nombreCommande = num(formData, "nombre_commande");
+  const nom = str(formData, "nom");
+  const habillagePrestataireId = str(formData, "habillage_prestataire_id");
+  const habillageDate = str(formData, "habillage_date");
   const { data, error } = await supabase
     .from("projets")
     .insert({
-      nom: str(formData, "nom"),
+      nom,
       client_id: str(formData, "client_id"),
       offre_id: str(formData, "offre_id"),
       format: str(formData, "format") ?? "16:9",
@@ -66,13 +97,17 @@ export async function createProjet(formData: FormData) {
       lien_riverside: str(formData, "lien_riverside"),
       habillage_fait: bool(formData, "habillage_fait"),
       habillage_lien: str(formData, "habillage_lien"),
-      habillage_date: str(formData, "habillage_date"),
-      habillage_prestataire_id: str(formData, "habillage_prestataire_id"),
+      habillage_date: habillageDate,
+      habillage_prestataire_id: habillagePrestataireId,
     })
     .select("id")
     .single();
 
   if (error) throw new Error(error.message);
+
+  if (habillagePrestataireId) {
+    await notifierHabillage(supabase, nom, habillagePrestataireId, habillageDate);
+  }
 
   await ensureVideoCount(supabase, data.id, nombreCommande);
 
@@ -86,8 +121,11 @@ export async function updateProjet(projetId: string, formData: FormData) {
   const supabase = await createClient();
 
   const nombreCommande = num(formData, "nombre_commande");
+  const nom = str(formData, "nom");
+  const habillagePrestataireId = str(formData, "habillage_prestataire_id");
+  const habillageDate = str(formData, "habillage_date");
   const payload = {
-    nom: str(formData, "nom"),
+    nom,
     client_id: str(formData, "client_id"),
     offre_id: str(formData, "offre_id"),
     format: str(formData, "format") ?? "16:9",
@@ -102,12 +140,28 @@ export async function updateProjet(projetId: string, formData: FormData) {
     lien_riverside: str(formData, "lien_riverside"),
     habillage_fait: bool(formData, "habillage_fait"),
     habillage_lien: str(formData, "habillage_lien"),
-    habillage_date: str(formData, "habillage_date"),
-    habillage_prestataire_id: str(formData, "habillage_prestataire_id"),
+    habillage_date: habillageDate,
+    habillage_prestataire_id: habillagePrestataireId,
   };
+
+  const { data: avant } = await supabase
+    .from("projets")
+    .select("habillage_prestataire_id, habillage_date")
+    .eq("id", projetId)
+    .single();
 
   const { error } = await supabase.from("projets").update(payload).eq("id", projetId);
   if (error) throw new Error(error.message);
+
+  // Prévenir lors d'une nouvelle affectation, d'un changement de
+  // prestataire, ou d'un changement de la date limite (même prestataire
+  // déjà en poste) — mais pas à chaque sauvegarde automatique du formulaire
+  // qui ne touche ni l'un ni l'autre.
+  const prestataireChange = habillagePrestataireId !== avant?.habillage_prestataire_id;
+  const dateChange = habillageDate !== (avant?.habillage_date ?? null);
+  if (habillagePrestataireId && (prestataireChange || dateChange)) {
+    await notifierHabillage(supabase, nom, habillagePrestataireId, habillageDate);
+  }
 
   await ensureVideoCount(supabase, projetId, nombreCommande);
 
