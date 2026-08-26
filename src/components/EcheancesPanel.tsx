@@ -45,7 +45,7 @@ export function EcheancesPanel({
                 {items.map((e) => (
                   <Link
                     key={`${e.videoId ?? "habillage"}-${e.type}`}
-                    href={e.type === "habillage" ? `/projets/${e.projetId}` : `/projets/${e.projetId}/videos`}
+                    href={`/projets/${e.projetId}/videos`}
                     className="flex flex-col gap-0.5 py-2 text-sm hover:bg-zinc-50"
                   >
                     <span className="font-medium text-zinc-900">{projetNomById.get(e.projetId) ?? "Projet"}</span>

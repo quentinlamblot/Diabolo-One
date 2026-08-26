@@ -247,6 +247,32 @@ export async function deleteVideo(projetId: string, videoId: string) {
   revalidatePath(`/projets/${projetId}`);
 }
 
+// Le prestataire assigné à l'habillage peut cocher "fait" et renseigner le
+// lien des fichiers sources lui-même, depuis la page vidéos qu'il consulte
+// déjà — la date et l'affectation restent décidées par l'admin sur la fiche
+// projet. Accès restreint à l'admin OU au prestataire précisément assigné
+// (pas "n'importe quel prestataire", contrairement au statut vidéo).
+export async function updateHabillage(projetId: string, formData: FormData) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { data: projet } = await supabase.from("projets").select("habillage_prestataire_id").eq("id", projetId).single();
+  const estLePrestataireAssigne = profile.role === "prestataire" && profile.prestataire_id === projet?.habillage_prestataire_id;
+  if (profile.role !== "admin" && !estLePrestataireAssigne) throw new Error("Non autorisé");
+
+  const { error } = await supabase
+    .from("projets")
+    .update({
+      habillage_fait: formData.get("habillage_fait") === "on",
+      habillage_lien: str(formData, "habillage_lien"),
+    })
+    .eq("id", projetId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/projets/${projetId}/videos`);
+  revalidatePath(`/projets/${projetId}`);
+}
+
 // Responsable par colonne du pipeline vidéo (Bruno sur "À tourner",
 // Hippolyte sur "En montage", ...), défini une fois par projet pour ne
 // plus avoir à choisir un responsable vidéo par vidéo.

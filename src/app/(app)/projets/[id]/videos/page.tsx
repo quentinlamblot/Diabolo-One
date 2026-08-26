@@ -4,14 +4,19 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Video, Statut, Prestataire, Interviewe, ProjetVideoResponsable } from "@/types/database";
 import { VideoBoard } from "./VideoBoard";
-import { createVideo, updateVideo, updateVideoStatut, deleteVideo, setResponsableColonne } from "./actions";
+import { HabillageCard } from "./HabillageCard";
+import { createVideo, updateVideo, updateVideoStatut, deleteVideo, setResponsableColonne, updateHabillage } from "./actions";
 
 export default async function VideosPage({ params }: PageProps<"/projets/[id]/videos">) {
   const { id } = await params;
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const { data: projet } = await supabase.from("projets").select("id, nom").eq("id", id).single();
+  const { data: projet } = await supabase
+    .from("projets")
+    .select("id, nom, habillage_fait, habillage_lien, habillage_date, habillage_prestataire_id, habillage_prestataire:habillage_prestataire_id(nom)")
+    .eq("id", id)
+    .single();
   if (!projet) notFound();
 
   const [{ data: videos }, { data: statuts }, { data: prestataires }, { data: interviewes }, { data: responsables }] =
@@ -47,6 +52,14 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
     "use server";
     await setResponsableColonne(id, statutId, prestataireId);
   };
+  const boundUpdateHabillage = async (formData: FormData) => {
+    "use server";
+    await updateHabillage(id, formData);
+  };
+
+  const habillagePrestataire = Array.isArray(projet.habillage_prestataire) ? projet.habillage_prestataire[0] : projet.habillage_prestataire;
+  const canEditHabillage = profile.role === "admin" || (profile.role === "prestataire" && profile.prestataire_id === projet.habillage_prestataire_id);
+  const montrerHabillage = !!projet.habillage_prestataire_id && canEditHabillage;
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,6 +75,17 @@ export default async function VideosPage({ params }: PageProps<"/projets/[id]/vi
           Suivi des contacts
         </Link>
       </div>
+
+      {montrerHabillage && (
+        <HabillageCard
+          habillageFait={projet.habillage_fait}
+          habillageLien={projet.habillage_lien}
+          habillageDate={projet.habillage_date}
+          prestataireNom={habillagePrestataire?.nom ?? null}
+          canEdit={canEditHabillage}
+          action={boundUpdateHabillage}
+        />
+      )}
 
       <VideoBoard
         statuts={(statuts ?? []) as Statut[]}
