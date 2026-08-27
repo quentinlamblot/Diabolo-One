@@ -1,54 +1,44 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireSuperAdmin } from "@/lib/auth";
-import { Badge } from "@/components/Badge";
-import type { ProdProjet, ProdStatut } from "@/types/database";
-
-const STATUT_LABEL: Record<ProdStatut, string> = {
-  a_venir: "À venir",
-  en_cours: "En cours",
-  termine: "Terminé",
-  annule: "Annulé",
-};
-const STATUT_COULEUR: Record<ProdStatut, string> = {
-  a_venir: "#94a3b8",
-  en_cours: "#3b82f6",
-  termine: "#22c55e",
-  annule: "#ef4444",
-};
+import type { ProdProjet, ProdProjetPrestataire, Prestataire } from "@/types/database";
+import { ProdProjetRow } from "./ProdProjetRow";
+import { toggleProdClientPaye, assignPrestataireProd, updatePrestataireProd, removePrestataireProd } from "./actions";
 
 function formatEuros(n: number | null) {
   if (n === null) return "—";
   return `${n.toLocaleString("fr-FR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} €`;
 }
 
-function formatDate(d: string | null) {
-  if (!d) return "—";
-  const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y}`;
-}
-
 export default async function ProdPage() {
   await requireSuperAdmin();
   const supabase = await createClient();
 
-  const [{ data: projets }, { data: assignations }] = await Promise.all([
+  const [{ data: projets }, { data: assignations }, { data: prestataires }] = await Promise.all([
     supabase.from("prod_projets").select("*").order("date_prestation", { ascending: false, nullsFirst: false }),
-    supabase.from("prod_projet_prestataires").select("prod_projet_id, montant_du, date_paiement"),
+    supabase.from("prod_projet_prestataires").select("*, prestataires(*)"),
+    supabase.from("prestataires").select("*").order("nom"),
   ]);
 
   const totauxParProjet = new Map<string, { du: number; restant: number }>();
-  for (const a of assignations ?? []) {
+  const assignationsParProjet = new Map<string, ProdProjetPrestataire[]>();
+  for (const a of (assignations ?? []) as ProdProjetPrestataire[]) {
     const entry = totauxParProjet.get(a.prod_projet_id) ?? { du: 0, restant: 0 };
     const montant = a.montant_du ?? 0;
     entry.du += montant;
     if (!a.date_paiement) entry.restant += montant;
     totauxParProjet.set(a.prod_projet_id, entry);
+
+    const liste = assignationsParProjet.get(a.prod_projet_id) ?? [];
+    liste.push(a);
+    assignationsParProjet.set(a.prod_projet_id, liste);
   }
 
   const list = (projets ?? []) as ProdProjet[];
+  const prestataireList = (prestataires ?? []) as Prestataire[];
   const valeurTotale = list.reduce((sum, p) => sum + (p.valeur_deal ?? 0), 0);
   const restantDuTotal = Array.from(totauxParProjet.values()).reduce((sum, t) => sum + t.restant, 0);
+  const restantAEncaisserTotal = list.reduce((sum, p) => sum + (p.date_paiement_client ? 0 : (p.valeur_deal ?? 0)), 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,7 +52,7 @@ export default async function ProdPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-2xl border border-zinc-200 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Projets</p>
           <p className="mt-1 text-xl font-semibold text-zinc-900">{list.length}</p>
@@ -70,6 +60,10 @@ export default async function ProdPage() {
         <div className="rounded-2xl border border-zinc-200 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Valeur totale des deals</p>
           <p className="mt-1 text-xl font-semibold text-zinc-900">{formatEuros(valeurTotale)}</p>
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Reste à encaisser</p>
+          <p className="mt-1 text-xl font-semibold text-zinc-900">{formatEuros(restantAEncaisserTotal)}</p>
         </div>
         <div className="rounded-2xl border border-zinc-200 bg-white p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">Reste à payer aux prestataires</p>
@@ -90,34 +84,41 @@ export default async function ProdPage() {
                 <Th>Date</Th>
                 <Th>Statut</Th>
                 <Th>Valeur du deal</Th>
+                <Th>Statut client</Th>
                 <Th>Reste dû prestataires</Th>
+                <Th />
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {list.map((p) => {
-                const totaux = totauxParProjet.get(p.id);
+                const boundToggleClient = async (paye: boolean) => {
+                  "use server";
+                  await toggleProdClientPaye(p.id, paye);
+                };
+                const boundAssign = async (formData: FormData) => {
+                  "use server";
+                  await assignPrestataireProd(p.id, formData);
+                };
+                const boundUpdate = async (rowId: string, formData: FormData) => {
+                  "use server";
+                  await updatePrestataireProd(p.id, rowId, formData);
+                };
+                const boundRemove = async (rowId: string) => {
+                  "use server";
+                  await removePrestataireProd(p.id, rowId);
+                };
                 return (
-                  <tr key={p.id} className="cursor-pointer hover:bg-zinc-50">
-                    <td className="whitespace-nowrap px-4 py-3 font-medium text-zinc-900">
-                      <Link href={`/prod/${p.id}`} className="hover:underline">
-                        {p.nom}
-                      </Link>
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{p.client ?? "—"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{p.type_prestation ?? "—"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{formatDate(p.date_prestation)}</td>
-                    <td className="whitespace-nowrap px-4 py-3">
-                      <Badge label={STATUT_LABEL[p.statut]} color={STATUT_COULEUR[p.statut]} />
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{formatEuros(p.valeur_deal)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
-                      {totaux && totaux.restant > 0 ? (
-                        <span className="font-medium text-red-600">{formatEuros(totaux.restant)}</span>
-                      ) : (
-                        formatEuros(totaux?.restant ?? 0)
-                      )}
-                    </td>
-                  </tr>
+                  <ProdProjetRow
+                    key={p.id}
+                    projet={p}
+                    restant={totauxParProjet.get(p.id)?.restant ?? 0}
+                    prestataires={prestataireList}
+                    assignations={assignationsParProjet.get(p.id) ?? []}
+                    toggleClientAction={boundToggleClient}
+                    assignAction={boundAssign}
+                    updateAction={boundUpdate}
+                    removeAction={boundRemove}
+                  />
                 );
               })}
             </tbody>
@@ -128,6 +129,6 @@ export default async function ProdPage() {
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
+function Th({ children }: { children?: React.ReactNode }) {
   return <th className="whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-zinc-500">{children}</th>;
 }

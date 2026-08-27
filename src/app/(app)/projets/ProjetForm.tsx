@@ -167,16 +167,14 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
-        <span className="text-sm font-semibold text-zinc-900">Facturation client</span>
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Montant facturé (€)">
-            <input type="number" step="0.01" min={0} name="montant_facture" defaultValue={projet?.montant_facture ?? ""} className="input" />
-          </Field>
-          <Field label="Payé le">
-            <input type="date" name="date_paiement_client" defaultValue={projet?.date_paiement_client ?? ""} className="input" />
-          </Field>
-        </div>
-        <p className="text-xs text-zinc-500">Laisser « Payé le » vide tant que le client n&apos;a pas réglé — utilisé dans Finances.</p>
+        <span className="text-sm font-semibold text-zinc-900">Paiement client</span>
+        <Field label="Payé le">
+          <input type="date" name="date_paiement_client" defaultValue={projet?.date_paiement_client ?? ""} className="input w-fit" />
+        </Field>
+        <p className="text-xs text-zinc-500">
+          Le montant facturé est celui de l&apos;offre. Laisser « Payé le » vide tant que le client n&apos;a pas réglé — utilisé dans
+          Finances.
+        </p>
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">

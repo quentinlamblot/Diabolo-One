@@ -94,7 +94,6 @@ export interface Projet {
   habillage_lien: string | null;
   habillage_date: string | null;
   habillage_prestataire_id: string | null;
-  montant_facture: number | null;
   date_paiement_client: string | null;
   created_at: string;
   updated_at: string;

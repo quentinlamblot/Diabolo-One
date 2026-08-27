@@ -34,7 +34,7 @@ export default async function FinancesPage() {
   const supabase = await createClient();
 
   const [{ data: projetsClassique }, { data: tachesClassique }, { data: projetsProd }, { data: assignationsProd }] = await Promise.all([
-    supabase.from("projets").select("id, nom, montant_facture, date_paiement_client, clients(nom), offres(nom)"),
+    supabase.from("projets").select("id, nom, date_paiement_client, clients(nom), offres(nom, prix)"),
     supabase.from("taches_prestataires").select("projet_id, montant, paye"),
     supabase.from("prod_projets").select("id, nom, client, valeur_deal, date_paiement_client, type_prestation"),
     supabase.from("prod_projet_prestataires").select("prod_projet_id, montant_du, date_paiement"),
@@ -76,14 +76,16 @@ export default async function FinancesPage() {
   let totalFactureClassique = 0;
   let totalEncaisseClassique = 0;
   for (const p of projetsClassique ?? []) {
-    const facture = Number(p.montant_facture ?? 0);
+    const client = one(p.clients);
+    const offre = one(p.offres);
+    // Le montant facturé au client est celui de l'offre associée au
+    // projet : pas de champ séparé à ressaisir.
+    const facture = Number(offre?.prix ?? 0);
     const encaisse = !!p.date_paiement_client;
     totalFactureClassique += facture;
     if (encaisse) totalEncaisseClassique += facture;
     const du = duParProjetClassique.get(p.id)?.du ?? 0;
     const restantDu = duParProjetClassique.get(p.id)?.restant ?? 0;
-    const client = one(p.clients);
-    const offre = one(p.offres);
 
     lignesProjets.push({
       id: p.id,

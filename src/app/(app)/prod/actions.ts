@@ -64,6 +64,24 @@ export async function updateProdProjet(projetId: string, formData: FormData) {
 
   revalidatePath("/prod");
   revalidatePath(`/prod/${projetId}`);
+  revalidatePath("/prod/finances");
+}
+
+// Bascule rapide payé/à encaisser depuis la liste des projets, sans passer
+// par la fiche détail — même logique que le reste : la date fait foi (null
+// = pas encore réglé), donc "payé" pose la date du jour et "annuler" la vide.
+export async function toggleProdClientPaye(projetId: string, paye: boolean) {
+  await requireSuperAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("prod_projets")
+    .update({ date_paiement_client: paye ? new Date().toISOString().slice(0, 10) : null })
+    .eq("id", projetId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/prod");
+  revalidatePath(`/prod/${projetId}`);
+  revalidatePath("/prod/finances");
 }
 
 export async function deleteProdProjet(projetId: string) {
@@ -93,7 +111,9 @@ export async function assignPrestataireProd(projetId: string, formData: FormData
   );
   if (error) throw new Error(error.message);
 
+  revalidatePath("/prod");
   revalidatePath(`/prod/${projetId}`);
+  revalidatePath("/prod/finances");
 }
 
 export async function updatePrestataireProd(projetId: string, rowId: string, formData: FormData) {
@@ -109,7 +129,9 @@ export async function updatePrestataireProd(projetId: string, rowId: string, for
     .eq("id", rowId);
   if (error) throw new Error(error.message);
 
+  revalidatePath("/prod");
   revalidatePath(`/prod/${projetId}`);
+  revalidatePath("/prod/finances");
 }
 
 export async function removePrestataireProd(projetId: string, rowId: string) {
@@ -118,5 +140,7 @@ export async function removePrestataireProd(projetId: string, rowId: string) {
   const { error } = await supabase.from("prod_projet_prestataires").delete().eq("id", rowId);
   if (error) throw new Error(error.message);
 
+  revalidatePath("/prod");
   revalidatePath(`/prod/${projetId}`);
+  revalidatePath("/prod/finances");
 }
