@@ -94,6 +94,7 @@ export async function toggleTachePaye(tacheId: string, paye: boolean) {
   const { error } = await supabase.from("taches_prestataires").update({ paye }).eq("id", tacheId);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/paiements");
+  revalidatePath("/prod/finances");
 }
 
 export async function updateTarifsMonteur(formData: FormData) {

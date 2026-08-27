@@ -30,38 +30,55 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <Logo markColor="#8cc5f4" markClassName="h-8 w-8" wordmarkClassName="text-lg text-sky" />
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          <Link href="/" className={navLinkClass}>
-            Tableau de bord
-          </Link>
-          <Link href="/projets" className={navLinkClass}>
-            Projets
-          </Link>
+          {profile.role === "admin" ? (
+            <details className="group" open>
+              <summary className="flex cursor-pointer list-none items-center justify-between rounded-full px-3 py-2 text-sm font-medium text-sky/90 hover:bg-white/10 hover:text-cream">
+                Remoteo
+                <span className="text-sky/50 transition-transform group-open:rotate-90">›</span>
+              </summary>
+              <div className="mt-1 flex flex-col gap-1 pl-3">
+                <Link href="/" className={navLinkClass}>
+                  Tableau de bord
+                </Link>
+                <Link href="/projets" className={navLinkClass}>
+                  Projets
+                </Link>
+                <Link href="/messagerie" className={navLinkClass}>
+                  Messagerie
+                </Link>
 
-          {(profile.role === "admin" || profile.role === "prestataire") && (
-            <Link href="/messagerie" className={navLinkClass}>
-              Messagerie
-            </Link>
-          )}
+                <details className="group" open>
+                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-full px-3 py-2 text-sm font-medium text-sky/90 hover:bg-white/10 hover:text-cream">
+                    Gestion
+                    <span className="text-sky/50 transition-transform group-open:rotate-90">›</span>
+                  </summary>
+                  <div className="mt-1 flex flex-col gap-1 pl-3">
+                    {gestionItems.map((item) => (
+                      <Link key={item.href} href={item.href} className={navLinkClass}>
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </details>
 
-          {profile.role === "admin" && (
+                <Link href="/admin/paiements" className={navLinkClass}>
+                  Paiements
+                </Link>
+              </div>
+            </details>
+          ) : (
             <>
-              <details className="group" open>
-                <summary className="flex cursor-pointer list-none items-center justify-between rounded-full px-3 py-2 text-sm font-medium text-sky/90 hover:bg-white/10 hover:text-cream">
-                  Gestion
-                  <span className="text-sky/50 transition-transform group-open:rotate-90">›</span>
-                </summary>
-                <div className="mt-1 flex flex-col gap-1 pl-3">
-                  {gestionItems.map((item) => (
-                    <Link key={item.href} href={item.href} className={navLinkClass}>
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </details>
-
-              <Link href="/admin/paiements" className={navLinkClass}>
-                Paiements
+              <Link href="/" className={navLinkClass}>
+                Tableau de bord
               </Link>
+              <Link href="/projets" className={navLinkClass}>
+                Projets
+              </Link>
+              {profile.role === "prestataire" && (
+                <Link href="/messagerie" className={navLinkClass}>
+                  Messagerie
+                </Link>
+              )}
             </>
           )}
 

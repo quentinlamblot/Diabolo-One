@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
+import { PayeToggleButton } from "@/components/PayeToggleButton";
 import type { ProdProjet, ProdProjetPrestataire, ProdStatut, Prestataire } from "@/types/database";
 import { ProdPrestataires } from "./[id]/ProdPrestataires";
 
@@ -68,18 +69,7 @@ export function ProdProjetRow({
         </td>
         <td className="whitespace-nowrap px-4 py-3 text-zinc-600">{formatEuros(projet.valeur_deal)}</td>
         <td className="whitespace-nowrap px-4 py-3">
-          <form action={() => toggleClientAction(!clientPaye)}>
-            <button
-              type="submit"
-              className={
-                clientPaye
-                  ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-200"
-                  : "rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700 hover:bg-orange-200"
-              }
-            >
-              {clientPaye ? "Payé ✓" : "À encaisser"}
-            </button>
-          </form>
+          <PayeToggleButton paye={clientPaye} action={toggleClientAction} labelPaye="Payé ✓" labelAPayer="À encaisser" />
         </td>
         <td className="whitespace-nowrap px-4 py-3 text-zinc-600">
           {restant > 0 ? <span className="font-medium text-red-600">{formatEuros(restant)}</span> : formatEuros(restant)}

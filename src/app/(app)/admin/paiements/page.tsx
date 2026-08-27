@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import type { TachePrestataire, Prestataire, Projet, TarifMonteur } from "@/types/database";
 import { createTache, deleteTache, updateTarifsMonteur, toggleTachePaye } from "./actions";
 import { TacheForm } from "./TacheForm";
+import { PayeToggleButton } from "@/components/PayeToggleButton";
 import Link from "next/link";
 
 function currentMonth(): string {
@@ -179,7 +180,13 @@ export default async function PaiementsAdminPage({
                         {Number(t.montant).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right">
-                        <PayeToggleButton id={t.id} paye={t.paye} />
+                        <PayeToggleButton
+                          paye={t.paye}
+                          action={async (paye) => {
+                            "use server";
+                            await toggleTachePaye(t.id, paye);
+                          }}
+                        />
                       </td>
                       <td className="whitespace-nowrap px-4 py-2.5 text-right">
                         <DeleteButton id={t.id} />
@@ -193,27 +200,6 @@ export default async function PaiementsAdminPage({
         </div>
       )}
     </div>
-  );
-}
-
-function PayeToggleButton({ id, paye }: { id: string; paye: boolean }) {
-  const action = async () => {
-    "use server";
-    await toggleTachePaye(id, !paye);
-  };
-  return (
-    <form action={action}>
-      <button
-        type="submit"
-        className={
-          paye
-            ? "rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 hover:bg-green-200"
-            : "rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-700 hover:bg-orange-200"
-        }
-      >
-        {paye ? "Réglé ✓" : "À régler"}
-      </button>
-    </form>
   );
 }
 

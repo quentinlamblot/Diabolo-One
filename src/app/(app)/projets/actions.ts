@@ -172,6 +172,25 @@ export async function updateProjet(projetId: string, formData: FormData) {
   revalidatePath(`/projets/${projetId}/videos`);
 }
 
+// Bascule rapide payé/à encaisser depuis Finances, sans passer par la fiche
+// projet — même logique que le reste : la date fait foi (null = pas encore
+// réglé), donc "payé" pose la date du jour et "annuler" la vide.
+export async function toggleProjetClientPaye(projetId: string, paye: boolean) {
+  const profile = await requireProfile();
+  if (profile.role !== "admin") throw new Error("Non autorisé");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("projets")
+    .update({ date_paiement_client: paye ? new Date().toISOString().slice(0, 10) : null })
+    .eq("id", projetId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/projets");
+  revalidatePath(`/projets/${projetId}`);
+  revalidatePath("/prod/finances");
+}
+
 export async function deleteProjet(projetId: string) {
   const profile = await requireProfile();
   if (profile.role !== "admin") throw new Error("Non autorisé");
