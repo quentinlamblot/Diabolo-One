@@ -32,6 +32,7 @@ export async function createProdProjet(formData: FormData) {
       date_prestation: str(formData, "date_prestation"),
       statut: (str(formData, "statut") as ProdStatut) ?? "a_venir",
       valeur_deal: num(formData, "valeur_deal"),
+      date_paiement_client: str(formData, "date_paiement_client"),
       notes: str(formData, "notes"),
     })
     .select("id")
@@ -55,6 +56,7 @@ export async function updateProdProjet(projetId: string, formData: FormData) {
       date_prestation: str(formData, "date_prestation"),
       statut: (str(formData, "statut") as ProdStatut) ?? "a_venir",
       valeur_deal: num(formData, "valeur_deal"),
+      date_paiement_client: str(formData, "date_paiement_client"),
       notes: str(formData, "notes"),
     })
     .eq("id", projetId);

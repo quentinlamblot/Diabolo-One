@@ -71,6 +71,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Link href="/prod" className={navLinkClass}>
                 Diabolo Prod
               </Link>
+              <Link href="/prod/finances" className={navLinkClass}>
+                Finances
+              </Link>
             </>
           )}
         </nav>

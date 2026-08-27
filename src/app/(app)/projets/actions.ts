@@ -21,6 +21,13 @@ function bool(formData: FormData, key: string): boolean {
   return formData.get(key) === "on";
 }
 
+function numOrNull(formData: FormData, key: string): number | null {
+  const v = formData.get(key);
+  if (typeof v !== "string" || v.trim() === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 // Complète le board vidéo jusqu'à `target` fiches en statut "à tourner",
 // sans jamais retirer de fiches existantes si la cible diminue.
 async function ensureVideoCount(supabase: Awaited<ReturnType<typeof createClient>>, projetId: string, target: number) {
@@ -99,6 +106,8 @@ export async function createProjet(formData: FormData) {
       habillage_lien: str(formData, "habillage_lien"),
       habillage_date: habillageDate,
       habillage_prestataire_id: habillagePrestataireId,
+      montant_facture: numOrNull(formData, "montant_facture"),
+      date_paiement_client: str(formData, "date_paiement_client"),
     })
     .select("id")
     .single();
@@ -142,6 +151,8 @@ export async function updateProjet(projetId: string, formData: FormData) {
     habillage_lien: str(formData, "habillage_lien"),
     habillage_date: habillageDate,
     habillage_prestataire_id: habillagePrestataireId,
+    montant_facture: numOrNull(formData, "montant_facture"),
+    date_paiement_client: str(formData, "date_paiement_client"),
   };
 
   const { data: avant } = await supabase

@@ -45,6 +45,9 @@ export function ProdProjetForm({
         <Field label="Valeur du deal (€)">
           <input type="number" step="0.01" min={0} name="valeur_deal" defaultValue={projet?.valeur_deal ?? ""} className="input" />
         </Field>
+        <Field label="Payé par le client le">
+          <input type="date" name="date_paiement_client" defaultValue={projet?.date_paiement_client ?? ""} className="input" />
+        </Field>
       </div>
 
       <Field label="Notes / infos liées au projet">
