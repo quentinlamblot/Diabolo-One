@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Video, Statut, Prestataire, Interviewe, ProjetVideoResponsable, UserRole } from "@/types/database";
 import { AutosaveForm } from "@/components/AutosaveForm";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { LinkOpener } from "@/components/LinkOpener";
 
 function contactLabel(i: Pick<Interviewe, "nom" | "prenom">) {
   return [i.prenom, i.nom].filter(Boolean).join(" ") || "Sans nom";
@@ -200,16 +201,19 @@ function VideoCard({
         <>
           <div className="flex items-start justify-between gap-2">
             <p className="font-medium text-zinc-900">{video.titre || "Vidéo sans titre"}</p>
-            {canEditFull && (
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                className="shrink-0 text-zinc-400 hover:text-zinc-700"
-                aria-label="Modifier"
-              >
-                ✎
-              </button>
-            )}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <LinkOpener value={video.lien_riverside} />
+              {canEditFull && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="text-zinc-400 hover:text-zinc-700"
+                  aria-label="Modifier"
+                >
+                  ✎
+                </button>
+              )}
+            </div>
           </div>
           {responsableColonne && <p className="mt-1 text-xs text-zinc-500">👤 {responsableColonne.nom}</p>}
           {video.interviewes && (
@@ -273,6 +277,19 @@ function VideoCard({
             <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
               Date de livraison
               <input type="date" name="date_livraison" defaultValue={video.date_livraison ?? ""} className="input" />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
+              Lien Riverside
+              <div className="flex items-center gap-1.5">
+                <input
+                  name="lien_riverside"
+                  type="url"
+                  defaultValue={video.lien_riverside ?? ""}
+                  placeholder="https://..."
+                  className="input"
+                />
+                <LinkOpener value={video.lien_riverside} />
+              </div>
             </label>
             <textarea
               name="notes"

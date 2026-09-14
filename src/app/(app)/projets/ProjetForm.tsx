@@ -139,32 +139,18 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Lien édito">
-          <div className="flex items-center gap-1.5">
-            <input
-              name="lien_edito"
-              type="url"
-              defaultValue={projet?.lien_edito ?? ""}
-              placeholder="https://..."
-              className="input"
-            />
-            <LinkOpener value={projet?.lien_edito} />
-          </div>
-        </Field>
-        <Field label="Lien Riverside">
-          <div className="flex items-center gap-1.5">
-            <input
-              name="lien_riverside"
-              type="url"
-              defaultValue={projet?.lien_riverside ?? ""}
-              placeholder="https://..."
-              className="input"
-            />
-            <LinkOpener value={projet?.lien_riverside} />
-          </div>
-        </Field>
-      </div>
+      <Field label="Lien édito">
+        <div className="flex items-center gap-1.5">
+          <input
+            name="lien_edito"
+            type="url"
+            defaultValue={projet?.lien_edito ?? ""}
+            placeholder="https://..."
+            className="input"
+          />
+          <LinkOpener value={projet?.lien_edito} />
+        </div>
+      </Field>
 
       <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
         <span className="text-sm font-semibold text-zinc-900">Paiement client</span>
@@ -219,15 +205,6 @@ export function ProjetForm({ clients, offres, statuts, prestataires, projet, act
         <textarea
           name="infos_complementaires"
           defaultValue={projet?.infos_complementaires ?? ""}
-          rows={3}
-          className="input"
-        />
-      </Field>
-
-      <Field label="Instructions individuelles">
-        <textarea
-          name="instructions_individuelles"
-          defaultValue={projet?.instructions_individuelles ?? ""}
           rows={3}
           className="input"
         />

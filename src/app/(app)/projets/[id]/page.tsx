@@ -248,17 +248,9 @@ function ProjetReadonly({ projet, videoCounts }: { projet: Projet; videoCounts: 
       {projet.lien_edito && (
         <Info label="Lien édito" value={<a className="text-blue-600 hover:underline" href={projet.lien_edito} target="_blank">{projet.lien_edito}</a>} />
       )}
-      {projet.lien_riverside && (
-        <Info label="Lien Riverside" value={<a className="text-blue-600 hover:underline" href={projet.lien_riverside} target="_blank">{projet.lien_riverside}</a>} />
-      )}
       {projet.infos_complementaires && (
         <div className="col-span-2">
           <Info label="Informations complémentaires" value={projet.infos_complementaires} />
-        </div>
-      )}
-      {projet.instructions_individuelles && (
-        <div className="col-span-2">
-          <Info label="Instructions individuelles" value={projet.instructions_individuelles} />
         </div>
       )}
     </div>

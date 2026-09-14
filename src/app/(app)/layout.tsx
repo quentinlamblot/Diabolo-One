@@ -31,41 +31,36 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           {profile.role === "admin" ? (
-            <details className="group" open>
-              <summary className="flex cursor-pointer list-none items-center justify-between rounded-full px-3 py-2 text-sm font-medium text-sky/90 hover:bg-white/10 hover:text-cream">
-                Remoteo
-                <span className="text-sky/50 transition-transform group-open:rotate-90">›</span>
-              </summary>
-              <div className="mt-1 flex flex-col gap-1 pl-3">
-                <Link href="/" className={navLinkClass}>
-                  Tableau de bord
-                </Link>
-                <Link href="/projets" className={navLinkClass}>
-                  Projets
-                </Link>
-                <Link href="/messagerie" className={navLinkClass}>
-                  Messagerie
-                </Link>
+            <>
+              <p className="px-3 pt-1 text-xs font-semibold uppercase tracking-wide text-sky/50">Remoteo</p>
+              <Link href="/" className={navLinkClass}>
+                Tableau de bord
+              </Link>
+              <Link href="/projets" className={navLinkClass}>
+                Projets
+              </Link>
+              <Link href="/messagerie" className={navLinkClass}>
+                Messagerie
+              </Link>
 
-                <details className="group" open>
-                  <summary className="flex cursor-pointer list-none items-center justify-between rounded-full px-3 py-2 text-sm font-medium text-sky/90 hover:bg-white/10 hover:text-cream">
-                    Gestion
-                    <span className="text-sky/50 transition-transform group-open:rotate-90">›</span>
-                  </summary>
-                  <div className="mt-1 flex flex-col gap-1 pl-3">
-                    {gestionItems.map((item) => (
-                      <Link key={item.href} href={item.href} className={navLinkClass}>
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                </details>
+              <details className="group" open>
+                <summary className="flex cursor-pointer list-none items-center justify-between rounded-full px-3 py-2 text-sm font-medium text-sky/90 hover:bg-white/10 hover:text-cream">
+                  Gestion
+                  <span className="text-sky/50 transition-transform group-open:rotate-90">›</span>
+                </summary>
+                <div className="mt-1 flex flex-col gap-1 pl-3">
+                  {gestionItems.map((item) => (
+                    <Link key={item.href} href={item.href} className={navLinkClass}>
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
 
-                <Link href="/admin/paiements" className={navLinkClass}>
-                  Paiements
-                </Link>
-              </div>
-            </details>
+              <Link href="/admin/paiements" className={navLinkClass}>
+                Paiements
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/" className={navLinkClass}>

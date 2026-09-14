@@ -87,9 +87,7 @@ export interface Projet {
   charte_graphique: CharteStatus;
   nombre_commande: number;
   chef_de_projet_id: string | null;
-  instructions_individuelles: string | null;
   lien_edito: string | null;
-  lien_riverside: string | null;
   habillage_fait: boolean;
   habillage_lien: string | null;
   habillage_date: string | null;
@@ -130,6 +128,7 @@ export interface Video {
   date_tournage: string | null;
   date_livraison: string | null;
   notes: string | null;
+  lien_riverside: string | null;
   ordre: number;
   created_at: string;
   updated_at: string;
