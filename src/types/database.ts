@@ -44,6 +44,16 @@ export interface Prestataire {
   updated_at: string;
 }
 
+export interface Todo {
+  id: string;
+  titre: string;
+  date: string | null;
+  prestataire_id: string;
+  fait: boolean;
+  created_at: string;
+  prestataires?: Prestataire;
+}
+
 export interface TarifMonteur {
   id: string;
   cle: string;
@@ -128,7 +138,7 @@ export interface Video {
   date_tournage: string | null;
   date_livraison: string | null;
   notes: string | null;
-  lien_riverside: string | null;
+  lien_krock: string | null;
   ordre: number;
   created_at: string;
   updated_at: string;

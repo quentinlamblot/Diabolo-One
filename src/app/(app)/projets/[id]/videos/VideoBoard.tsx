@@ -202,7 +202,7 @@ function VideoCard({
           <div className="flex items-start justify-between gap-2">
             <p className="font-medium text-zinc-900">{video.titre || "Vidéo sans titre"}</p>
             <div className="flex shrink-0 items-center gap-1.5">
-              <LinkOpener value={video.lien_riverside} />
+              <LinkOpener value={video.lien_krock} />
               {canEditFull && (
                 <button
                   type="button"
@@ -279,16 +279,16 @@ function VideoCard({
               <input type="date" name="date_livraison" defaultValue={video.date_livraison ?? ""} className="input" />
             </label>
             <label className="flex flex-col gap-1 text-xs font-medium text-zinc-500">
-              Lien Riverside
+              Lien Krock
               <div className="flex items-center gap-1.5">
                 <input
-                  name="lien_riverside"
+                  name="lien_krock"
                   type="url"
-                  defaultValue={video.lien_riverside ?? ""}
+                  defaultValue={video.lien_krock ?? ""}
                   placeholder="https://..."
                   className="input"
                 />
-                <LinkOpener value={video.lien_riverside} />
+                <LinkOpener value={video.lien_krock} />
               </div>
             </label>
             <textarea

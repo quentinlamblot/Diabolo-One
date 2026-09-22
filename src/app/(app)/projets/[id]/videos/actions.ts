@@ -206,7 +206,7 @@ export async function updateVideo(projetId: string, videoId: string, formData: F
       date_tournage: str(formData, "date_tournage"),
       date_livraison: str(formData, "date_livraison"),
       notes: str(formData, "notes"),
-      lien_riverside: str(formData, "lien_riverside"),
+      lien_krock: str(formData, "lien_krock"),
     })
     .eq("id", videoId);
   if (error) throw new Error(error.message);

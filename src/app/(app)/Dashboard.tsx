@@ -2,6 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/Badge";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
+import { TodoWidget } from "@/components/TodoWidget";
+import { createTodo, toggleTodoFait, deleteTodo } from "./todo/actions";
+import type { Prestataire, Todo } from "@/types/database";
 import {
   buildEcheances,
   buildHabillageEcheances,
@@ -26,20 +29,25 @@ export async function Dashboard() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: projets }, { data: videos }, { data: statutsVideo }, { data: responsablesRows }] = await Promise.all([
-    supabase
-      .from("projets")
-      .select(
-        "id, nom, nombre_commande, clients(nom), statuts(label, couleur), habillage_fait, habillage_date, habillage_prestataire_id, habillage_prestataire:habillage_prestataire_id(id, nom)"
-      )
-      .order("created_at", { ascending: false }),
-    supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
-    supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
-    supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
-  ]);
+  const [{ data: projets }, { data: videos }, { data: statutsVideo }, { data: responsablesRows }, { data: todos }, { data: prestataires }] =
+    await Promise.all([
+      supabase
+        .from("projets")
+        .select(
+          "id, nom, nombre_commande, clients(nom), statuts(label, couleur), habillage_fait, habillage_date, habillage_prestataire_id, habillage_prestataire:habillage_prestataire_id(id, nom)"
+        )
+        .order("created_at", { ascending: false }),
+      supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
+      supabase.from("statuts").select("id, ordre, responsable_defaut:responsable_defaut_id(id, nom)").eq("type", "video"),
+      supabase.from("projet_video_responsables").select("projet_id, statut_id, prestataires(id, nom)"),
+      supabase.from("todos").select("*, prestataires(*)").eq("fait", false).order("date"),
+      supabase.from("prestataires").select("*").order("nom"),
+    ]);
 
   const projetList = (projets ?? []) as ProjetRow[];
   const videoList = (videos ?? []) as VideoForEcheance[];
+  const prestataireList = (prestataires ?? []) as Prestataire[];
+  const todoList = (todos ?? []) as Todo[];
   const projetNomById = new Map(projetList.map((p) => [p.id, p.nom]));
   const maxOrdre = dernierOrdre(statutsVideo ?? []);
   const premierId = premierStatutId(statutsVideo ?? []);
@@ -103,6 +111,25 @@ export async function Dashboard() {
       <section className="relative">
         <h2 className="mb-3 text-sm font-semibold text-zinc-900">À faire</h2>
         <EcheancesPanel groups={groups} projetNomById={projetNomById} showPrestataire />
+      </section>
+
+      <section>
+        <TodoWidget
+          todos={todoList.map((t) => ({
+            id: t.id,
+            titre: t.titre,
+            date: t.date,
+            prestataire_id: t.prestataire_id,
+            fait: t.fait,
+            prestataireNom: t.prestataires?.nom,
+          }))}
+          prestataires={prestataireList}
+          showPrestataireName
+          canManage
+          toggleAction={toggleTodoFait}
+          createAction={createTodo}
+          deleteAction={deleteTodo}
+        />
       </section>
 
       <section>

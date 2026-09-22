@@ -2,6 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { EcheancesPanel } from "@/components/EcheancesPanel";
 import { AVenirPanel } from "@/components/AVenirPanel";
+import { TodoWidget } from "@/components/TodoWidget";
+import { toggleTodoFait } from "./todo/actions";
+import type { Todo } from "@/types/database";
 import {
   buildEcheances,
   buildHabillageEcheances,
@@ -20,7 +23,7 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: videos }, { data: assignations }, { data: statutsVideo }, { data: responsablesRows }, { data: projetsHabillage }] =
+  const [{ data: videos }, { data: assignations }, { data: statutsVideo }, { data: responsablesRows }, { data: projetsHabillage }, { data: todos }] =
     await Promise.all([
       supabase.from("videos").select("id, projet_id, titre, statut_id, date_tournage, date_livraison, statuts(ordre, label, couleur)"),
       supabase.from("projet_prestataires").select("projets(id, nom, statuts(label, couleur))").eq("prestataire_id", prestataireId),
@@ -30,6 +33,7 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
         .from("projets")
         .select("id, nom, habillage_fait, habillage_date, habillage_prestataire_id, habillage_prestataire:habillage_prestataire_id(id, nom)")
         .eq("habillage_prestataire_id", prestataireId),
+      supabase.from("todos").select("*").eq("prestataire_id", prestataireId).eq("fait", false).order("date"),
     ]);
 
   const maxOrdre = dernierOrdre(statutsVideo ?? []);
@@ -85,6 +89,8 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
     .map((a) => (Array.isArray(a.projets) ? a.projets[0] : a.projets))
     .filter((p) => !!p) as { id: string; nom: string }[];
 
+  const todoList = (todos ?? []) as Todo[];
+
   return (
     <div className="relative flex flex-col gap-8">
       <div
@@ -118,6 +124,21 @@ export async function PrestataireDashboard({ prestataireId, nom }: { prestataire
       <section>
         <h2 className="mb-3 text-sm font-semibold text-zinc-900">Bientôt (pas encore à vous)</h2>
         <AVenirPanel echeances={aVenir} projetNomById={projetNomById} />
+      </section>
+
+      <section>
+        <TodoWidget
+          todos={todoList.map((t) => ({
+            id: t.id,
+            titre: t.titre,
+            date: t.date,
+            prestataire_id: t.prestataire_id,
+            fait: t.fait,
+          }))}
+          showPrestataireName={false}
+          canManage={false}
+          toggleAction={toggleTodoFait}
+        />
       </section>
 
       {mesProjets.length > 0 && (

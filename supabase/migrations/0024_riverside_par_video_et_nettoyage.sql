@@ -1,6 +1,6 @@
--- Le lien Riverside est désormais par vidéo (chaque interview a son propre
+-- Le lien Krock est désormais par vidéo (chaque interview a son propre
 -- enregistrement) plutôt que par projet.
-alter table videos add column if not exists lien_riverside text;
+alter table videos add column if not exists lien_krock text;
 
 -- Instructions individuelles fusionnées dans informations complémentaires
 -- (un seul champ) : on concatène le contenu existant avant de retirer la
